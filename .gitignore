@@ -11,3 +11,5 @@
 !CLAUDE.md
 !settings.json
 !statusline.sh
+!hooks/
+!hooks/**
