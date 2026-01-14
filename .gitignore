@@ -1,0 +1,12 @@
+# Ignore everything by default
+*
+*/
+
+# Whitelist specific files and directories
+!.gitignore
+!commands/
+!commands/**
+!skills/
+!skills/**
+!CLAUDE.md
+!settings.json
