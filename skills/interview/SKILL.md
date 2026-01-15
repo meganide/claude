@@ -15,6 +15,7 @@ Be very in-depth and continue interviewing the user continually until it's compl
 1. **Read the spec file first** - Use the file path provided by the user (often with @ reference)
 2. **Ask non-obvious questions** - Go beyond surface-level details to uncover:
    - Technical implementation specifics
+   - Architecture and architectural changes (component structure, design patterns, system design)
    - UI & UX considerations
    - Edge cases and error handling
    - Performance and scalability concerns
@@ -32,4 +33,43 @@ Be very in-depth and continue interviewing the user continually until it's compl
 
 4. **Use AskUserQuestion tool** - Structure your questions using the tool to get clear, specific answers
 
-5. **Write the complete spec** - Once the interview is complete, write a comprehensive specification to the file that includes all the information gathered
+5. **Write the complete spec** - Once the interview is complete, write a comprehensive specification to the file that includes:
+   - All the information gathered from the interview
+   - **Detailed code implementations** - Include specific code examples, function signatures, class structures, and implementation details
+   - **Database schema changes** - If the feature requires database modifications, include:
+     - Table structures with field types and constraints
+     - Indexes and relationships
+     - Migration strategies
+     - Data migration considerations
+   - **Detailed tasks breakdown** - Create a comprehensive task list using checkbox format. Each task should follow this structure:
+     ```
+     [ ] Task title (e.g., "Add authentication")
+         - Detailed implementation notes
+         - Code snippet implementation (actual code to be written)
+         - Files that need to be modified or created
+         - Dependencies on other tasks
+         - Testing requirements for that specific task
+         - Acceptance criteria
+     ```
+
+     Example:
+     ```
+     [ ] Add authentication
+         - Implement JWT-based authentication with refresh tokens
+         - Code implementation:
+           ```typescript
+           // src/services/auth.ts
+           export class AuthService {
+             async login(email: string, password: string): Promise<{ token: string, refreshToken: string }> {
+               const user = await this.validateCredentials(email, password);
+               const token = this.generateToken(user);
+               const refreshToken = this.generateRefreshToken(user);
+               return { token, refreshToken };
+             }
+           }
+           ```
+         - Files: src/services/auth.ts, src/routes/auth.ts, src/middleware/authenticate.ts
+         - Dependencies: Database schema changes must be completed first
+         - Testing: Unit tests for AuthService, integration tests for auth endpoints
+         - Acceptance: Users can log in, log out, and access protected routes
+     ```
