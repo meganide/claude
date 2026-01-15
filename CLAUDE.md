@@ -14,7 +14,6 @@ When creating any plan (through plan mode or otherwise), run `cursor planname.md
 
 ## Verification Process
 - **Always run the test suite** after making changes to ensure nothing broke
-- Use **chrome-devtools-mcp** to verify UI changes and user flows work correctly
 - Manually verify your changes work as expected
 - Check for any unintended side effects or regressions
 - Never consider work complete until verification is done
