@@ -2,6 +2,9 @@
 #   docker sandbox run --volume ~/.claude:/home/agent/.claude claude
 # This creates a sandbox with your settings/skills. Subsequent runs reuse it.
 
+# Graceful shutdown on Ctrl+C - stops container but allows current file writes to finish
+trap 'echo ""; echo "Stopping sandbox..."; docker ps --filter "name=sandbox" -q | xargs -r docker stop; exit' INT TERM
+
 # Default values
 ITERATIONS=30
 FEATURE=""
