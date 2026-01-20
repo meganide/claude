@@ -79,6 +79,7 @@ Read through the gathered requirements and identify:
 7. **Alternatives** - When you see multiple valid options:
    - Present the options with trade-offs
    - Ask which approach the user prefers
+   - If one option is clearly better, add "(Recommended)" to its label
 
 **Key principle:** Your job is to surface decisions the user needs to make. Don't assume - ask.
 

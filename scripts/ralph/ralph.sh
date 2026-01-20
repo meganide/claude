@@ -1,3 +1,7 @@
+# First-time setup: Run this command ONCE to authenticate with the volume mount:
+#   docker sandbox run --volume ~/.claude:/home/agent/.claude claude
+# This creates a sandbox with your settings/skills. Subsequent runs reuse it.
+
 # Default values
 ITERATIONS=30
 FEATURE=""
@@ -39,7 +43,7 @@ fi
 
 # For each iteration, run Claude Code with the following prompt.
 for ((i=1; i<=$ITERATIONS; i++)); do
-  result=$(docker sandbox run claude -p "Complete exactly ONE task from the feature's tasks file, then stop.
+  result=$(docker sandbox run --volume ~/.claude:/home/agent/.claude claude -p "Complete exactly ONE task from the feature's tasks file, then stop.
 
 **Feature:** $FEATURE
 **File locations:**
@@ -78,8 +82,9 @@ Only after all checks pass, update the task in tasks.json:
 git add -A && git commit -s -m '<task title>: <brief description>'
 
 ### Step 7: Check for completion
-If ALL tasks now have \"passes\": true, output exactly:
-<promise>COMPLETE</promise>
+If ALL tasks now have \"passes\": true:
+1. Run /ship to commit, push, and create a PR
+2. Output exactly: <promise>COMPLETE</promise>
 
 This signals to the automation script that no more work remains.
 
@@ -90,9 +95,7 @@ Do not continue to the next task. Exit immediately.
 - Only complete ONE task per invocation
 - Do not mark a task as passes: true if tests are failing
 - If checks fail, fix and retry before marking complete
-- Output <promise>COMPLETE</promise> when all tasks are done")
-
-  echo "$result"
+- Output <promise>COMPLETE</promise> when all tasks are done" | tee /dev/tty)
 
   if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
     echo "PRD complete, exiting."

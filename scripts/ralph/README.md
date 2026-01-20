@@ -38,7 +38,7 @@ Run `claude` to authenticate with your Anthropic account.
 Install [Docker Desktop 4.50+](https://docs.docker.com/desktop/install), then run:
 
 ```bash
-docker sandbox run claude
+docker sandbox run --volume ~/.claude:/home/agent/.claude claude
 ```
 
 On first run, you'll authenticate with Anthropic. Your credentials are stored in a Docker volume.
