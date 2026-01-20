@@ -1,5 +1,7 @@
 # First-time setup: Run this command ONCE to authenticate with the volume mount:
 #   docker sandbox run --volume ~/.claude:/home/agent/.claude claude
+# If using worktrees, also mount the main repo's .git directory:
+#   docker sandbox run --volume ~/.claude:/home/agent/.claude --volume /path/to/main/.git:/path/to/main/.git claude
 # This creates a sandbox with your settings/skills. Subsequent runs reuse it.
 
 # Graceful shutdown on Ctrl+C - stops container but allows current file writes to finish
@@ -44,9 +46,38 @@ if [ -z "$FEATURE" ]; then
   exit 1
 fi
 
+# Get git directory (supports both main repos and worktrees)
+# For worktrees, this returns the main repo's .git directory
+GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "Error: Not a git repository"
+  exit 1
+fi
+# Convert to absolute path
+GIT_COMMON_DIR=$(cd "$(dirname "$GIT_COMMON_DIR")" && pwd)/$(basename "$GIT_COMMON_DIR")
+
+# Build volume mounts
+VOLUME_MOUNTS="--volume ~/.claude:/home/agent/.claude"
+# If in a worktree, also mount the main repo's .git directory
+if [ -f ".git" ]; then
+  echo "[setup] Detected git worktree"
+  echo "[setup] Mounting git directory: $GIT_COMMON_DIR"
+  VOLUME_MOUNTS="$VOLUME_MOUNTS --volume $GIT_COMMON_DIR:$GIT_COMMON_DIR"
+else
+  echo "[setup] Running from main repository"
+fi
+echo "[setup] Working directory: $(pwd)"
+
+echo "Starting Ralph loop for feature: $FEATURE"
+echo "Max iterations: $ITERATIONS"
+echo ""
+
 # For each iteration, run Claude Code with the following prompt.
 for ((i=1; i<=$ITERATIONS; i++)); do
-  result=$(docker sandbox run --volume ~/.claude:/home/agent/.claude claude -p "Complete exactly ONE task from the feature's tasks file, then stop.
+  echo "=========================================="
+  echo "Iteration $i/$ITERATIONS"
+  echo "=========================================="
+  result=$(docker sandbox run $VOLUME_MOUNTS claude -p "Complete exactly ONE task from the feature's tasks file, then stop.
 
 **Feature:** $FEATURE
 **File locations:**
@@ -101,7 +132,17 @@ Do not continue to the next task. Exit immediately.
 - Output <promise>COMPLETE</promise> when all tasks are done" | tee /dev/tty)
 
   if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
-    echo "PRD complete, exiting."
+    echo ""
+    echo "=========================================="
+    echo "All tasks complete after $i iteration(s)."
+    echo "=========================================="
     exit 0
   fi
+  echo ""
 done
+
+echo "=========================================="
+echo "Reached max iterations ($ITERATIONS)."
+echo "Tasks may remain incomplete."
+echo "Run again to continue, or increase -n."
+echo "=========================================="

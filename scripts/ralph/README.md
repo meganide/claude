@@ -43,6 +43,23 @@ docker sandbox run --volume ~/.claude:/home/agent/.claude claude
 
 On first run, you'll authenticate with Anthropic. Your credentials are stored in a Docker volume.
 
+### Using with Git Worktrees
+
+If you want to run multiple Ralph instances in parallel (one per feature), use [git worktrees](https://git-scm.com/docs/git-worktree). Each worktree has its own working directory but shares the git history.
+
+**Important:** Worktrees have a `.git` file that references the main repo's `.git` directory. Docker needs to mount this directory for git to work inside the container.
+
+First-time setup for worktrees:
+```bash
+# From your worktree directory, find the main .git directory
+GIT_DIR=$(git rev-parse --git-common-dir)
+
+# Run docker sandbox with both mounts
+docker sandbox run --volume ~/.claude:/home/agent/.claude --volume $GIT_DIR:$GIT_DIR claude
+```
+
+The `ralph.sh` script handles this automatically - it detects when you're in a worktree and adds the necessary mount.
+
 Key benefits of sandboxes:
 
 - Your working directory mounts at the same path inside the container
