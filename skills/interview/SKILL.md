@@ -1,86 +1,356 @@
 ---
 name: interview
-description: This skill should be used when the user asks to "interview me", "ask me questions about", mentions "spec interview", "interview about spec", or wants to be interviewed in detail about a specification, feature, or implementation.
-version: 1.1.0
+description: Comprehensive feature development workflow that gathers requirements, creates specs, plans, and tasks, then implements incrementally while maintaining living documentation. This skill should be used when the user asks to "interview me", "ask me questions about", mentions "spec interview", "interview about spec", or wants to be interviewed in detail about a specification, feature, or implementation.
 ---
 
-# Interview Skill
+# Interview - Requirements Gathering & Specification
 
-Read the SPEC.md file (or any spec file referenced by the user with @) and interview the user in detail using the AskUserQuestion tool about literally anything: technical implementation, UI & UX, concerns, tradeoffs, etc. but make sure the questions are not obvious.
+This skill guides you through gathering requirements to create a complete feature specification with PRD, technical plan, and actionable tasks.
 
-Be very in-depth and continue interviewing the user continually until it's complete, then write the spec to the file.
+## Overview
 
-## Output Location
+Use `/interview` when starting a new feature. This skill will:
+1. Ask questions to understand the "what" and "why" (for the spec)
+2. Ask technical questions inferred from the spec (for the plan)
+3. Generate three living documents in `specs/<feature-name>/`
 
-**IMPORTANT**: Always save the completed spec to the `specs/` folder in the project root with a unique filename:
+## Instructions
 
-- **Format**: `specs/{slug}-{timestamp}.md`
-- **Slug**: Auto-generate a kebab-case slug from the main feature/topic name (e.g., `user-authentication`, `payment-integration`, `dashboard-redesign`)
-- **Timestamp**: ISO 8601 format date-time (e.g., `2025-01-19T14-30-00`)
-- **Example**: `specs/user-authentication-2025-01-19T14-30-00.md`
+### Phase 1: Product Interview (spec.md)
 
-Create the `specs/` directory if it doesn't exist. Derive the slug automatically from the feature being discussed - do not ask the user for it.
+Use `AskUserQuestion` to understand the feature. Start with core questions, then follow up based on answers.
+
+**Start with these core questions:**
+- "What feature do you want to build?" (header: "Feature")
+- "What problem does this solve and why is it needed?" (header: "Problem")
+- "Who are the users and what's their goal?" (header: "Users")
+- "What does success look like?" (header: "Success")
+
+**Then infer follow-up questions based on answers:**
+
+Analyze responses and ask about anything unclear or important:
+- Scope boundaries - what's in vs out?
+- Priority - must-have vs nice-to-have requirements?
+- User flows - key scenarios to support?
+- Constraints - time, budget, technical limitations?
+- Integration - existing features this touches?
+- Edge cases from a user perspective?
+
+Ask up to 4 questions at a time. Continue until you have enough context.
+
+### Phase 2: Technical Interview (plan.md)
+
+**Do NOT use hardcoded questions.** Analyze the spec context and infer what technical decisions need user input.
+
+**How to infer technical questions:**
+
+Read through the gathered requirements and identify:
+
+1. **Architecture decisions** - If multiple approaches exist, ask which one:
+   - "Should we use REST or GraphQL for this API?"
+   - "Client-side or server-side rendering for this page?"
+   - "Monolith or microservice for this functionality?"
+
+2. **Database/Data** - If data storage is involved:
+   - "What's the data model? What fields are needed?"
+   - "Use existing tables or new ones?"
+   - "What are the relationships between entities?"
+
+3. **Security** - If auth/sensitive data is involved:
+   - "What authorization rules apply?"
+   - "What data needs protection?"
+   - "Any compliance requirements?"
+
+4. **External services** - If integrations are needed:
+   - "Which third-party service to use?"
+   - "How to handle failures/retries?"
+   - "Caching strategy?"
+
+5. **User experience** - If UI is involved:
+   - "What should happen on error?"
+   - "Loading states needed?"
+   - "Mobile considerations?"
+
+6. **Edge cases** - Technical edge cases:
+   - "What if X fails?"
+   - "How to handle concurrent edits?"
+   - "Rate limiting needed?"
+
+7. **Alternatives** - When you see multiple valid options:
+   - Present the options with trade-offs
+   - Ask which approach the user prefers
+
+**Key principle:** Your job is to surface decisions the user needs to make. Don't assume - ask.
+
+### Phase 3: Create Specification Documents
+
+After gathering all context, create three files:
+
+#### 1. `specs/<feature-name>/spec.md`
+
+```markdown
+# <Feature Name> Specification
+
+## Overview
+Brief description of the feature
+
+## Problem Statement
+Why this feature is needed (from interview)
+
+## Target Users
+Who will use this and their goals
+
+## Success Criteria
+How we measure success
+
+## Requirements
+
+### Must Have
+- Requirement 1
+- Requirement 2
+
+### Nice to Have
+- Optional requirement 1
+
+## User Flows
+Key scenarios from the interview
+
+## Constraints
+Limitations and boundaries
+
+## Out of Scope
+What we're explicitly NOT building
+```
+
+#### 2. `specs/<feature-name>/plan.md`
+
+**Structure is dynamic** - only include sections relevant to this feature based on the technical interview.
+
+```markdown
+# <Feature Name> Technical Plan
+
+## Overview
+High-level technical approach
+
+## Implementation Approach
+Step-by-step technical strategy
+
+<!-- Only include relevant sections below -->
+
+## Architecture
+<!-- If architecture was discussed -->
+
+## Data Model
+<!-- If database/schema was discussed -->
+
+## API Design
+<!-- If APIs were discussed -->
+
+## Security
+<!-- If security was discussed -->
+
+## Integrations
+<!-- If external services were discussed -->
+
+## Error Handling
+<!-- If error scenarios were discussed -->
+
+## Edge Cases
+Specific edge cases from the interview
+
+## Testing Strategy
+<!-- ALWAYS include - not optional -->
+- Unit tests for: <business logic, utilities, helpers>
+- Integration tests for: <API endpoints, database operations>
+- Test command: <e.g., npm test, pytest, go test>
+
+## Linting & Type Checking
+<!-- ALWAYS include - not optional -->
+- Lint command: <e.g., npm run lint>
+- Type check command: <e.g., npm run typecheck, tsc>
+
+## Open Questions
+Any unresolved decisions
+```
 
 ## Guidelines
 
-1. **Read the spec file first** - Use the file path provided by the user (often with @ reference), if any
-2. **Ask non-obvious questions** - Go beyond surface-level details to uncover:
-   - Technical implementation specifics
-   - Architecture and architectural changes (component structure, design patterns, system design)
-   - UI & UX considerations
-   - Edge cases and error handling
-   - Performance and scalability concerns
-   - Tradeoffs between different approaches
-   - Security implications
-   - Testing strategies
-   - Deployment considerations
-   - Future extensibility
-
-3. **Be thorough** - Continue asking questions until you have a complete understanding of:
+. **Be thorough** - Continue asking questions until you have a complete understanding of:
    - All technical requirements
    - All user experience requirements
    - All constraints and tradeoffs
    - All edge cases and error scenarios
 
-4. **Use AskUserQuestion tool** - Structure your questions using the tool to get clear, specific answers
+**Required sections:** Testing Strategy and Linting & Type Checking must ALWAYS be included in every plan - these are not optional.
 
-5. **Write the complete spec** - Once the interview is complete, write a comprehensive specification to the file that includes:
-   - All the information gathered from the interview
-   - **Detailed code implementations** - Include specific code examples, function signatures, class structures, and implementation details
-   - **Database schema changes** - If the feature requires database modifications, include:
-     - Table structures with field types and constraints
-     - Indexes and relationships
-     - Migration strategies
-     - Data migration considerations
-   - **Detailed tasks breakdown** - Create a comprehensive task list using checkbox format. Each task should follow this structure:
-     ```
-     [ ] Task title (e.g., "Add authentication")
-         - Detailed implementation notes
-         - Code snippet implementation (actual code to be written)
-         - Files that need to be modified or created
-         - Dependencies on other tasks
-         - Testing requirements for that specific task
-         - Acceptance criteria
-     ```
+#### 3. `specs/<feature-name>/tasks.json`
 
-     Example:
-     ```
-     [ ] Add authentication
-         - Implement JWT-based authentication with refresh tokens
-         - Code implementation:
-           ```typescript
-           // src/services/auth.ts
-           export class AuthService {
-             async login(email: string, password: string): Promise<{ token: string, refreshToken: string }> {
-               const user = await this.validateCredentials(email, password);
-               const token = this.generateToken(user);
-               const refreshToken = this.generateRefreshToken(user);
-               return { token, refreshToken };
-             }
-           }
-           ```
-         - Files: src/services/auth.ts, src/routes/auth.ts, src/middleware/authenticate.ts
-         - Dependencies: Database schema changes must be completed first
-         - Testing: Unit tests for AuthService, integration tests for auth endpoints
-         - Acceptance: Users can log in, log out, and access protected routes
-     ```
+**Critical: Tasks must be self-contained, testable in isolation, and have clear success criteria.**
+
+Each task should:
+- Be independently implementable
+- Not depend on uncommitted work from other tasks
+- Not modify the same files as concurrent tasks
+- Include all context needed to execute it
+- Be testable in isolation - user can pause, verify it works, then continue
+- Have clear success criteria that can be verified (tests pass, endpoint returns X, UI shows Y)
+
+```json
+{
+  "featureName": "<feature-name>",
+  "description": "Living document. Update passes/learnings as tasks complete.",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "<clear action>",
+      "category": "<backend|frontend|database|config|test|docs>",
+      "context": "<relevant details from spec/plan>",
+      "files": ["<file1>", "<file2>"],
+      "success": "<verifiable criteria - e.g., 'tests pass', 'endpoint returns 200'>",
+      "steps": [
+        "<step 1 - e.g., 'run npm test'>",
+        "<step 2 - e.g., 'curl localhost:3000/api/users'>",
+        "<step 3 - e.g., 'verify response contains user object'>"
+      ],
+      "passes": false,
+      "learnings": []
+    },
+    {
+      "id": 2,
+      "title": "<clear action>",
+      "category": "<category>",
+      "context": "<relevant details>",
+      "files": ["<file1>"],
+      "success": "<verifiable criteria>",
+      "steps": ["<verification step 1>", "<verification step 2>"],
+      "passes": false,
+      "learnings": []
+    }
+  ]
+}
+```
+
+**Field descriptions:**
+- `id`: Auto-incrementing task identifier (1, 2, 3...)
+- `title`: Clear, actionable task name
+- `category`: Type of work (backend, frontend, database, config, test, docs)
+- `context`: Relevant details from spec/plan needed to complete the task
+- `files`: Expected files to create or modify
+- `success`: Verifiable success criteria
+- `steps`: Ordered verification steps to confirm task completion
+- `passes`: Boolean - false when pending, true when completed
+- `learnings`: Array of strings - notes added after completion about decisions, deviations, or useful context for subsequent tasks
+
+**Example of a completed task:**
+```json
+{
+  "id": 3,
+  "title": "Set up authentication middleware",
+  "category": "backend",
+  "context": "Use JWT for stateless auth per plan.md",
+  "files": ["src/middleware/auth.ts"],
+  "success": "Protected routes return 401 without token, 200 with valid token",
+  "steps": [
+    "Run npm test -- auth.test.ts",
+    "curl -X GET localhost:3000/api/protected (expect 401)",
+    "curl -X GET localhost:3000/api/protected -H 'Authorization: Bearer <token>' (expect 200)"
+  ],
+  "passes": true,
+  "learnings": [
+    "Used Passport.js instead of custom JWT validation for better OAuth support",
+    "Existing error handler in src/middleware/error.ts already formats auth errors correctly"
+  ]
+}
+```
+
+**Task sizing guidelines:**
+- **Ideal size:** 1-2 hours of human work equivalent
+- **Small enough** to complete in one context window (~50-100 turns)
+- **Big enough** to be a meaningful, testable unit
+- **One commit's worth** - would you squash these changes into one commit?
+- If a task touches more than 3-5 files, consider splitting it
+- If it can't be tested without another uncompleted task, merge them
+
+**Good task examples:**
+- "Create user registration API endpoint with validation"
+- "Add login form component with error handling"
+- "Set up database schema for orders table"
+
+**Too small** (combine with related work):
+- "Create user model" → combine with related endpoint
+- "Add email field validation" → part of a larger form task
+
+**Too big** (break down further):
+- "Implement full authentication system" → split into: registration, login, password reset
+- "Build the entire checkout flow" → split into: cart, payment, confirmation
+
+**Task ordering principles:**
+- Foundation first (setup, config, types)
+- Core logic before edge cases
+- Backend before frontend (if applicable)
+- Each task should include writing its own unit/integration tests
+- Final task should always be "Run linting and fix issues"
+
+**Testing requirements:**
+- Every task that adds functionality MUST include writing tests for that functionality
+- Tests are part of the task, not a separate task (keeps tasks self-contained and verifiable)
+- Integration tests for API endpoints, unit tests for business logic
+
+### Phase 4: Review
+
+After creating all documents:
+
+1. Summarize what was created
+2. Show the task list
+3. Mention they can edit the specs manually before implementing
+4. Output the available commands for next steps:
+
+```
+Ready to implement! Recommend running /clear first for a fresh context, then:
+
+/implement specs/<feature-name>/tasks.json
+  → Interactive mode: asks after each task
+
+/implement specs/<feature-name>/tasks.json --all
+  → Autonomous mode: completes all tasks without stopping
+
+ralph -f <feature-name> [-n <iterations>]
+  → Fully automated: no human in the loop (default: 30 iterations)
+```
+
+## File Naming
+
+Convert feature name to kebab-case:
+- "User Authentication" -> `specs/user-authentication/`
+- "Shopping Cart" -> `specs/shopping-cart/`
+
+## Example Flow
+
+```
+User: /interview
+
+Agent: [Asks product questions using AskUserQuestion]
+User: [Answers]
+
+Agent: [Asks inferred technical questions]
+User: [Answers]
+
+Agent: [Creates specs/my-feature/spec.md, plan.md, tasks.json]
+Agent: "I've created the specification documents:
+  - specs/my-feature/spec.md (PRD)
+  - specs/my-feature/plan.md (technical plan)
+  - specs/my-feature/tasks.json (5 tasks)
+
+Review and edit the specs if needed.
+
+Ready to implement! Recommend running /clear first for a fresh context, then:
+
+/implement specs/my-feature/tasks.json
+  → Interactive mode: asks after each task
+
+/implement specs/my-feature/tasks.json --all
+  → Autonomous mode: completes all tasks without stopping
+
+ralph -f my-feature [-n <iterations>]
+  → Fully automated: no human in the loop (default: 30 iterations)"
+```

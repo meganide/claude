@@ -1,6 +1,3 @@
-# Plan Review
-Run `cursor planname.md` after writing plan files for review.
-
 # Testing & Verification
 **CRITICAL**: Test and verify all changes before completion.
 
