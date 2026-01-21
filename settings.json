@@ -1,1 +1,7 @@
-/mnt/claude-data/settings.json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh",
+    "padding": 0
+  }
+}
