@@ -1,7 +1,33 @@
 {
+  "model": "claude-opus-4-5-20251101",
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh",
-    "padding": 0
-  }
+    "command": "~/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "agent-deck@agent-deck": true,
+    "typescript-lsp@claude-plugins-official": false,
+    "hookify@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "playwright@claude-plugins-official": false,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "linear@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true,
+    "vtsls@claude-code-lsps": true
+  },
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -q '\\.ts$'; then npx prettier --write \"$file_path\"; fi; }"
+        }
+      ]
+    }
+  ]
 }
