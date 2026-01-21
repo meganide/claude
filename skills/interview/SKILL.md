@@ -38,6 +38,17 @@ Analyze responses and ask about anything unclear or important:
 
 Ask up to 4 questions at a time. Continue until you have enough context.
 
+**Suggest better UX when you see obvious improvements:**
+- If the user describes a flow with unnecessary steps, friction, or poor patterns, propose a better alternative
+- Frame it as: "Based on what you've described, have you considered [alternative]? It would [benefit] because [reason]."
+- Examples of improvements to suggest:
+  - Multi-step wizards → single-page with sections (when steps are short)
+  - Confirmation dialogs for every action → undo functionality (less intrusive)
+  - Full-page reloads → optimistic updates (feels instant)
+  - Manual refresh to see updates → real-time sync (better UX)
+  - Complex settings pages → smart defaults with advanced options (simpler start)
+- Always present as an option, not a mandate - the user may have context you don't
+
 ### Phase 2: Technical Interview (plan.md)
 
 **Do NOT use hardcoded questions.** Analyze the spec context and infer what technical decisions need user input.
@@ -71,17 +82,29 @@ Read through the gathered requirements and identify:
    - "Loading states needed?"
    - "Mobile considerations?"
 
-6. **Edge cases** - Technical edge cases:
+6. **Suggest better UX flows** - When you identify obvious improvements:
+   - If the described flow has friction points, propose smoother alternatives
+   - Present the user's original approach alongside your recommended improvement
+   - Example: "You mentioned a 3-step form. Have you considered a single-page form with inline validation? It reduces drop-off and feels faster."
+   - Always explain WHY your suggestion is better (fewer clicks, faster feedback, less cognitive load, etc.)
+
+7. **Edge cases** - Technical edge cases:
    - "What if X fails?"
    - "How to handle concurrent edits?"
    - "Rate limiting needed?"
 
-7. **Alternatives** - When you see multiple valid options:
+8. **Alternatives & Improvements** - When you see multiple valid options OR better approaches:
    - Present the options with trade-offs
    - Ask which approach the user prefers
    - If one option is clearly better, add "(Recommended)" to its label
+   - **Proactively suggest improvements**: If the user's proposed approach has known pitfalls or there's a clearly superior pattern, present it as an alternative
+   - Example: "You mentioned polling for updates. Consider WebSockets instead - they provide real-time updates without the latency and server load of polling. (Recommended)"
+   - Example: "For this data structure, you could use a flat list, but a normalized structure with IDs would make updates O(1) instead of O(n). (Recommended)"
 
-**Key principle:** Your job is to surface decisions the user needs to make. Don't assume - ask.
+**Key principles:**
+- Surface decisions the user needs to make. Don't assume - ask.
+- **Be a proactive advisor**: If you see a better way, say so. Your experience across many projects is valuable - share patterns that work well and warn about common pitfalls.
+- When suggesting improvements, always explain the trade-off (what they gain vs. what it costs in complexity/time).
 
 ### Phase 3: Create Specification Documents
 
@@ -309,10 +332,10 @@ After creating all documents:
 ```
 Ready to implement! Recommend running /clear first for a fresh context, then:
 
-/implement specs/<feature-name>/tasks.json
+/implement <feature-name>
   → Interactive mode: asks after each task
 
-/implement specs/<feature-name>/tasks.json --all
+/implement <feature-name> --all
   → Autonomous mode: completes all tasks without stopping
 
 ralph -f <feature-name> [-n <iterations>]
@@ -346,10 +369,10 @@ Review and edit the specs if needed.
 
 Ready to implement! Recommend running /clear first for a fresh context, then:
 
-/implement specs/my-feature/tasks.json
+/implement my-feature
   → Interactive mode: asks after each task
 
-/implement specs/my-feature/tasks.json --all
+/implement my-feature --all
   → Autonomous mode: completes all tasks without stopping
 
 ralph -f my-feature [-n <iterations>]
