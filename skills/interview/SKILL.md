@@ -313,7 +313,7 @@ Each task should:
 - Core logic before edge cases
 - Backend before frontend (if applicable)
 - Each task should include writing its own unit/integration tests
-- Final task should always be "Run linting and fix issues"
+- Final task should always be "Run linting, type checking, and all tests" to verify no regressions
 
 **Testing requirements:**
 - Every task that adds functionality MUST include writing tests for that functionality
