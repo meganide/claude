@@ -1,14 +1,5 @@
-# Testing & Verification
-**CRITICAL**: Test and verify all changes before completion.
-
-- Write tests BEFORE/alongside implementation (unit/integration/e2e)
-- Cover happy paths, edge cases, errors
-- Clear test names describing what's tested
-- Always run test suite after changes
-- Manually verify + check for regressions
-- All tests must pass, no regressions allowed
-
 # Code Quality
+- Maintainable production code
 - Clean, readable code with meaningful names
 - Focused, concise functions
 - Self-documenting, minimal comments
