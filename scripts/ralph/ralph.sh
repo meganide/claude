@@ -1,8 +1,5 @@
-# First-time setup: Run this command ONCE to authenticate with the volume mount:
-#   docker sandbox run --volume ~/.claude:/home/agent/.claude claude
-# If using worktrees, also mount the main repo's .git directory:
-#   docker sandbox run --volume ~/.claude:/home/agent/.claude --volume /path/to/main/.git:/path/to/main/.git claude
-# This creates a sandbox with your settings/skills. Subsequent runs reuse it.
+#!/bin/bash
+set -e
 
 # Graceful shutdown on Ctrl+C - stops container but allows current file writes to finish
 trap 'echo ""; echo "Stopping sandbox..."; docker ps --filter "name=sandbox" -q | xargs -r docker stop; exit' INT TERM
@@ -47,7 +44,6 @@ if [ -z "$FEATURE" ]; then
 fi
 
 # Get git directory (supports both main repos and worktrees)
-# For worktrees, this returns the main repo's .git directory
 GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
 if [ $? -ne 0 ]; then
   echo "Error: Not a git repository"
@@ -68,16 +64,29 @@ else
 fi
 echo "[setup] Working directory: $(pwd)"
 
+# jq filter to extract streaming text from assistant messages
+stream_text='select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
+
+# jq filter to extract final result
+final_result='select(.type == "result").result // empty'
+
 echo "Starting Ralph loop for feature: $FEATURE"
 echo "Max iterations: $ITERATIONS"
 echo ""
 
-# For each iteration, run Claude Code with the following prompt.
 for ((i=1; i<=$ITERATIONS; i++)); do
   echo "=========================================="
   echo "Iteration $i/$ITERATIONS"
   echo "=========================================="
-  result=$(docker sandbox run $VOLUME_MOUNTS claude -p "Complete exactly ONE task from the feature's tasks file, then stop.
+
+  tmpfile=$(mktemp)
+  trap "rm -f $tmpfile" EXIT
+
+  docker sandbox run --credentials host $VOLUME_MOUNTS claude \
+    --verbose \
+    --print \
+    --output-format stream-json \
+    "Complete exactly ONE task from the feature's tasks file, then stop.
 
 **Feature:** $FEATURE
 **File locations:**
@@ -129,7 +138,12 @@ Do not continue to the next task. Exit immediately.
 - Only complete ONE task per invocation
 - Do not mark a task as passes: true if tests are failing
 - If checks fail, fix and retry before marking complete
-- Output <promise>COMPLETE</promise> when all tasks are done" | tee /dev/tty)
+- Output <promise>COMPLETE</promise> when all tasks are done" \
+  | grep --line-buffered '^{' \
+  | tee "$tmpfile" \
+  | jq --unbuffered -rj "$stream_text"
+
+  result=$(jq -r "$final_result" "$tmpfile")
 
   if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
     echo ""
