@@ -36,6 +36,17 @@ Analyze responses and ask about anything unclear or important:
 - Integration - existing features this touches?
 - Edge cases from a user perspective?
 
+**Clarify ambiguities immediately:**
+
+When a user's response is unclear, vague, or could be interpreted multiple ways, ask clarifying questions before moving on:
+- If a term is ambiguous: "When you say 'users', do you mean all users or just authenticated users?"
+- If scope is unclear: "You mentioned 'notifications' - do you mean in-app notifications, email, push, or all of them?"
+- If a flow has gaps: "You described step A and step C, but what happens in between? What if the user cancels?"
+- If requirements conflict: "Earlier you said X, but this seems to contradict Y. Which takes priority?"
+- If assumptions are implicit: "You mentioned 'the usual flow' - can you describe what that looks like specifically?"
+
+**Do NOT assume or fill in gaps yourself.** If something could go multiple ways, ask. It's better to ask one extra question than to build the wrong thing.
+
 Ask up to 4 questions at a time. Continue until you have enough context.
 
 **Suggest better UX when you see obvious improvements:**
@@ -101,8 +112,21 @@ Read through the gathered requirements and identify:
    - Example: "You mentioned polling for updates. Consider WebSockets instead - they provide real-time updates without the latency and server load of polling. (Recommended)"
    - Example: "For this data structure, you could use a flat list, but a normalized structure with IDs would make updates O(1) instead of O(n). (Recommended)"
 
+**Clarify technical ambiguities:**
+
+When technical details are unclear or could be interpreted multiple ways:
+- If implementation is ambiguous: "You mentioned 'real-time updates' - do you mean WebSocket-based live updates, or polling every few seconds?"
+- If data structure is unclear: "What exactly goes in a 'user profile'? Just name and email, or more fields?"
+- If error handling is vague: "When you say 'handle errors gracefully', what should the user see? A toast, a modal, inline error?"
+- If scale is unknown: "How many concurrent users do you expect? This affects caching and database decisions."
+- If existing patterns are unclear: "Is there an existing way similar features handle this in the codebase?"
+
+**Summarize understanding before proceeding:**
+After gathering technical context, briefly summarize your understanding: "So to confirm: we'll use X for Y, store data in Z, and handle errors by W. Is that right?" This catches misunderstandings early.
+
 **Key principles:**
 - Surface decisions the user needs to make. Don't assume - ask.
+- **Clarify before assuming**: If something could be interpreted multiple ways, ask which interpretation is correct.
 - **Be a proactive advisor**: If you see a better way, say so. Your experience across many projects is valuable - share patterns that work well and warn about common pitfalls.
 - When suggesting improvements, always explain the trade-off (what they gain vs. what it costs in complexity/time).
 
@@ -199,7 +223,9 @@ Any unresolved decisions
 
 ## Guidelines
 
-. **Be thorough** - Continue asking questions until you have a complete understanding of:
+1. **Ask clarifying questions** - When something is unclear, vague, or ambiguous, ask before proceeding. Never assume or guess the user's intent. One extra question is always better than building the wrong thing.
+
+2. **Be thorough** - Continue asking questions until you have a complete understanding of:
    - All technical requirements
    - All user experience requirements
    - All constraints and tradeoffs

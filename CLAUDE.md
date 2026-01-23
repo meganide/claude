@@ -10,5 +10,6 @@
 - Handle errors appropriately
 - Consider edge cases
 - Follow language idioms
+- If tests that previously passed now fail (regression), investigate and fix the issue
 - Prefer composition over inheritance
 - Keep complexity low, favor simple solutions
