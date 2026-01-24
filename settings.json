@@ -15,7 +15,8 @@
     "pr-review-toolkit@claude-plugins-official": true,
     "linear@claude-plugins-official": true,
     "vtsls@claude-code-lsps": true,
-    "context7@claude-plugins-official": true
+    "context7@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true
   },
   "PostToolUse": [
     {
