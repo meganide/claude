@@ -138,7 +138,9 @@ Do not continue to the next task. Exit immediately.
 - Only complete ONE task per invocation
 - Do not mark a task as passes: true if tests are failing
 - If checks fail, fix and retry before marking complete
-- Output <promise>COMPLETE</promise> when all tasks are done" \
+- Output <promise>COMPLETE</promise> when all tasks are done
+- If your changes break existing tests, reconsider your approach or fix the underlying issue
+- Do not modify tests just to make them pass - fix the actual code causing the failure (only modify tests if the test itself is incorrect)" \
   | grep --line-buffered '^{' \
   | tee "$tmpfile" \
   | jq --unbuffered -rj "$stream_text"
