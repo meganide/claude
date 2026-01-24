@@ -14,6 +14,18 @@ description: Ship changes by committing, pushing, and creating a PR to main
 
 Ship the current changes to a pull request:
 
+### Step 0: Handle unstaged files
+
+Check if there are unstaged files (modified files not staged for commit). If there are:
+
+1. Use `AskUserQuestion` to ask the user:
+   - Question: "There are unstaged files. Should they be included in this commit?"
+   - Options: "Yes, include them" / "No, ship without them"
+2. If the user says yes, stage the unstaged files with `git add`
+3. If the user says no, proceed without staging them
+
+### Step 1: Branch and commit
+
 1. If on main branch, create a new feature branch
 2. If there are uncommitted changes, create a commit with a conventional commit message following the format:
    - `feat:` for new features
@@ -24,8 +36,14 @@ Ship the current changes to a pull request:
    - `chore:` for maintenance tasks
    - Include a clear, concise description
    - Add Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-3. Push the branch to origin (with `-u` flag if first push)
-4. Create a pull request to main using `gh pr create` with:
+
+### Step 2: Push
+
+Push the branch to origin (with `-u` flag if first push)
+
+### Step 3: Create PR
+
+Create a pull request to main using `gh pr create` with:
    - A clear, descriptive title
    - A concise body that summarizes all changes/features added using markdown formatting
    - Include test plan or notes if relevant
