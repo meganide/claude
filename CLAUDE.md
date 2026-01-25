@@ -13,6 +13,7 @@
 - If tests that previously passed now fail (regression), investigate and fix the issue
 - Prefer composition over inheritance
 - Keep complexity low, favor simple solutions
+- When changing approach, clean up abandoned code - verify old code/files are no longer used elsewhere and remove them
 
 # Testing
 - Always run `npm test` before finishing work (if that doesn't work, check package.json for the correct test command)
