@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Graceful shutdown on Ctrl+C
-trap 'echo ""; echo "Stopping..."; exit' INT TERM
+# Graceful shutdown on Ctrl+C - stops container but allows current file writes to finish
+trap 'echo ""; echo "Stopping sandbox..."; docker ps --filter "name=sandbox" -q | xargs -r docker stop; exit' INT TERM
 
 # Default values
 ITERATIONS=30
@@ -43,12 +43,25 @@ if [ -z "$FEATURE" ]; then
   exit 1
 fi
 
-# Verify we're in a git repository
-if ! git rev-parse --git-dir > /dev/null 2>&1; then
+# Get git directory (supports both main repos and worktrees)
+GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
+if [ $? -ne 0 ]; then
   echo "Error: Not a git repository"
   exit 1
 fi
+# Convert to absolute path
+GIT_COMMON_DIR=$(cd "$(dirname "$GIT_COMMON_DIR")" && pwd)/$(basename "$GIT_COMMON_DIR")
 
+# Build volume mounts
+VOLUME_MOUNTS="--volume ~/.claude:/home/agent/.claude"
+# If in a worktree, also mount the main repo's .git directory
+if [ -f ".git" ]; then
+  echo "[setup] Detected git worktree"
+  echo "[setup] Mounting git directory: $GIT_COMMON_DIR"
+  VOLUME_MOUNTS="$VOLUME_MOUNTS --volume $GIT_COMMON_DIR:$GIT_COMMON_DIR"
+else
+  echo "[setup] Running from main repository"
+fi
 echo "[setup] Working directory: $(pwd)"
 
 # jq filter to extract streaming text from assistant messages
@@ -69,7 +82,7 @@ for ((i=1; i<=$ITERATIONS; i++)); do
   tmpfile=$(mktemp)
   trap "rm -f $tmpfile" EXIT
 
-  claude \
+  docker sandbox run --credentials host $VOLUME_MOUNTS claude \
     --verbose \
     --print \
     --output-format stream-json \
