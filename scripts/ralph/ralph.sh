@@ -70,6 +70,7 @@ for ((i=1; i<=$ITERATIONS; i++)); do
   trap "rm -f $tmpfile" EXIT
 
   claude \
+    --dangerously-skip-permissions \
     --verbose \
     --print \
     --output-format stream-json \
