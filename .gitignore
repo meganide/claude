@@ -15,3 +15,7 @@
 !hooks/**
 !scripts/
 !scripts/**
+
+# Re-ignore specific files/folders
+skills/Archive.zip
+.DS_Store
