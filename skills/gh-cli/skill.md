@@ -101,23 +101,6 @@ gh pr create --fill  # Uses commit messages
 
 # Create draft PR
 gh pr create --draft --title "WIP: Feature"
-
-# Merge PR
-gh pr merge <number>
-gh pr merge <number> --squash
-gh pr merge <number> --rebase
-
-# Close PR without merging
-gh pr close <number>
-
-# Reopen PR
-gh pr reopen <number>
-
-# Request review
-gh pr edit <number> --add-reviewer username
-
-# Add labels
-gh pr edit <number> --add-label "bug,priority"
 ```
 
 ## Issues
@@ -180,30 +163,6 @@ gh search issues "label:bug" --repo org/repo
 
 # Search across all repos in org
 gh search issues "query" --owner org
-```
-
-### Issue Actions
-
-```bash
-# Create issue
-gh issue create --title "Bug report" --body "Description"
-
-# Create with labels
-gh issue create --title "Title" --label "bug,urgent"
-
-# Close issue
-gh issue close <number>
-
-# Reopen issue
-gh issue reopen <number>
-
-# Add comment
-gh issue comment <number> --body "Comment text"
-
-# Edit issue
-gh issue edit <number> --title "New title"
-gh issue edit <number> --add-label "priority"
-gh issue edit <number> --add-assignee username
 ```
 
 ## Commits and Code
@@ -288,9 +247,6 @@ gh api repos/{owner}/{repo}/pulls/<number>/reviews
 # Get commit details
 gh api repos/{owner}/{repo}/commits/<sha>
 
-# POST request
-gh api repos/{owner}/{repo}/issues/<number>/comments -f body="Comment"
-
 # With JQ filtering
 gh api repos/{owner}/{repo}/pulls --jq '.[].title'
 
@@ -322,20 +278,6 @@ gh pr list --state all --json number,title,author,mergedAt,state --limit 500
 ```bash
 # Watch checks until complete
 gh pr checks <number> --watch
-```
-
-### Quick PR Review
-
-```bash
-# View diff, then approve
-gh pr diff <number>
-gh pr review <number> --approve
-
-# Request changes
-gh pr review <number> --request-changes --body "Please fix X"
-
-# Comment only
-gh pr review <number> --comment --body "Looks good but..."
 ```
 
 ### Export to JSON for Processing

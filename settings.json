@@ -13,7 +13,20 @@
       "Bash(portal-ops root enable *)",
       "Bash(portal-ops root disable *)",
       "Bash(portal-ops root rotate-password *)",
-      "Bash(portal-ops tasks trigger *)"
+      "Bash(portal-ops tasks trigger *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr close *)",
+      "Bash(gh pr reopen *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr review *)",
+      "Bash(gh issue create *)",
+      "Bash(gh issue close *)",
+      "Bash(gh issue reopen *)",
+      "Bash(gh issue edit *)",
+      "Bash(gh issue comment *)",
+      "Bash(gh api * -f *)",
+      "Bash(gh api * -F *)",
+      "Bash(gh api * --field *)"
     ]
   },
   "model": "claude-opus-4-5@20251101",
