@@ -21,3 +21,7 @@
 - If your changes break existing tests, reconsider your approach or fix the underlying issue
 - Do not modify tests just to make them pass - fix the actual code causing the failure
 - Exception: only modify tests if the test itself is incorrect or outdated
+
+# Documentation & Libraries
+- Use Context7 MCP to fetch up-to-date documentation when working with libraries or frameworks
+- Always query Context7 before implementing features that rely on external library APIs to ensure you're using current patterns and avoiding deprecated methods
