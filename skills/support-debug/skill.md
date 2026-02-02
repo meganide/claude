@@ -516,6 +516,11 @@ If you cannot find concrete evidence:
 
 **ALWAYS create a visual debug summary after completing any investigation.** This is mandatory, not optional. Every support debugging session must end with an interactive visual summary.
 
+**Save all playground HTML files to:** `~/projects/support-debugs/`
+
+Use a descriptive filename format: `<customer>-<issue>-<date>.html`
+Example: `acme-soundcheck-config-2026-02-02.html`
+
 To create it, simply prompt: "Create a playground about this debugging session" or include the details inline.
 
 ### Why This Is Required
@@ -622,8 +627,8 @@ Create an interactive HTML page with:
 2. Gather all findings, logs, configs, and evidence
 3. Draft customer response
 4. Create a playground with the summary (e.g., "Create a playground about this debugging session...")
-5. Review the generated visualization
-6. Share with team or use for documentation
+5. Save to `~/projects/support-debugs/<customer>-<issue>-<date>.html`
+6. Review the generated visualization
 
 ---
 
