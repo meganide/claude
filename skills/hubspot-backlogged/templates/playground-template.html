@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backlog Status Report</title>
+  <style>
+    :root {
+      --ready: #22c55e;
+      --ready-bg: #dcfce7;
+      --waiting: #eab308;
+      --waiting-bg: #fef9c3;
+      --backlogged: #ef4444;
+      --backlogged-bg: #fee2e2;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --link: #2563eb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    header { margin-bottom: 24px; }
+    header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+    .timestamp { color: var(--text-muted); font-size: 14px; }
+
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--card-bg); border-radius: 8px; padding: 16px; border: 1px solid var(--border); }
+    .stat-card .count { font-size: 32px; font-weight: 700; display: block; }
+    .stat-card .label { font-size: 14px; color: var(--text-muted); }
+    .stat-card.ready { border-left: 4px solid var(--ready); }
+    .stat-card.waiting { border-left: 4px solid var(--waiting); }
+    .stat-card.backlogged { border-left: 4px solid var(--backlogged); }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+    .filters select, .filters input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    .filters input { flex: 1; min-width: 200px; }
+    .filters button { padding: 8px 16px; background: var(--text); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .filters button:hover { opacity: 0.9; }
+
+    .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px; }
+
+    .ticket-card { background: var(--card-bg); border-radius: 8px; padding: 16px; border: 1px solid var(--border); cursor: pointer; transition: box-shadow 0.2s; }
+    .ticket-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .ticket-card.ready { border-left: 4px solid var(--ready); }
+    .ticket-card.waiting { border-left: 4px solid var(--waiting); }
+    .ticket-card.backlogged { border-left: 4px solid var(--backlogged); }
+    .ticket-card .ticket-id { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .ticket-card .subject { font-weight: 600; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .ticket-card .company { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+    .ticket-card .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+    .badge.platform { background: #e0e7ff; color: #3730a3; }
+    .badge.product { background: #fce7f3; color: #9d174d; }
+    .badge.linear { background: #dbeafe; color: #1e40af; }
+    .badge.recommendation { padding: 4px 10px; font-size: 12px; }
+    .badge.recommendation.ready { background: var(--ready-bg); color: #166534; }
+    .badge.recommendation.waiting { background: var(--waiting-bg); color: #854d0e; }
+    .badge.recommendation.backlogged { background: var(--backlogged-bg); color: #991b1b; }
+
+    .copy-btn { font-size: 12px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+    .copy-btn:hover { background: var(--border); }
+    .copy-btn.copied { background: var(--ready-bg); border-color: var(--ready); }
+
+    .detail-page { display: none; }
+    .detail-page.active { display: block; }
+    .overview-page.hidden { display: none; }
+
+    .back-link { display: inline-block; margin-bottom: 16px; color: var(--link); text-decoration: none; font-size: 14px; }
+    .back-link:hover { text-decoration: underline; }
+
+    .detail-header { margin-bottom: 24px; }
+    .detail-header .ticket-id { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+    .detail-header .subject { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .detail-header .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .recommendation-banner { padding: 16px; border-radius: 8px; margin-bottom: 24px; font-weight: 600; }
+    .recommendation-banner.ready { background: var(--ready-bg); color: #166534; border: 1px solid var(--ready); }
+    .recommendation-banner.waiting { background: var(--waiting-bg); color: #854d0e; border: 1px solid var(--waiting); }
+    .recommendation-banner.backlogged { background: var(--backlogged-bg); color: #991b1b; border: 1px solid var(--backlogged); }
+
+    .section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .section h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+    .message-box { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; position: relative; }
+    .message-box pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; }
+    .message-box .copy-btn { position: absolute; top: 8px; right: 8px; }
+
+    .findings-table { width: 100%; border-collapse: collapse; }
+    .findings-table td { padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .findings-table tr:last-child td { border-bottom: none; }
+    .findings-table .label { font-weight: 500; width: 150px; }
+    .findings-table .value { color: var(--text-muted); }
+    .findings-table .link-btn { display: inline-block; padding: 4px 10px; background: var(--link); color: white; text-decoration: none; border-radius: 4px; font-size: 12px; }
+    .findings-table .link-btn:hover { opacity: 0.9; }
+
+    .timeline { display: flex; gap: 4px; overflow-x: auto; padding: 16px 0; }
+    .timeline-step { flex: 1; min-width: 120px; text-align: center; position: relative; }
+    .timeline-step::after { content: ''; position: absolute; top: 12px; left: 50%; width: 100%; height: 2px; background: var(--border); z-index: 0; }
+    .timeline-step:last-child::after { display: none; }
+    .timeline-step .dot { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto 8px; position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .timeline-step .dot.complete { background: var(--ready); color: white; }
+    .timeline-step .dot.pending { background: var(--border); color: var(--text-muted); }
+    .timeline-step .dot.na { background: var(--bg); border: 2px dashed var(--border); color: var(--text-muted); }
+    .timeline-step .name { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+    .timeline-step .date { font-size: 11px; color: var(--text-muted); }
+
+    details { margin-top: 8px; }
+    summary { cursor: pointer; font-size: 14px; color: var(--text-muted); }
+    details pre { margin-top: 8px; background: var(--bg); padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; }
+
+    .no-tickets { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="overview-page" id="overview-page">
+      <header>
+        <h1>Backlog Status Report</h1>
+        <p class="timestamp" id="report-timestamp">Generated: Loading...</p>
+      </header>
+
+      <div class="summary-cards" id="summary-cards">
+        <div class="stat-card">
+          <span class="count" id="total-count">0</span>
+          <span class="label">Total Tickets</span>
+        </div>
+        <div class="stat-card ready">
+          <span class="count" id="ready-count">0</span>
+          <span class="label">Ready to Close</span>
+        </div>
+        <div class="stat-card waiting">
+          <span class="count" id="waiting-count">0</span>
+          <span class="label">Waiting on Release</span>
+        </div>
+        <div class="stat-card backlogged">
+          <span class="count" id="backlogged-count">0</span>
+          <span class="label">Still Backlogged</span>
+        </div>
+      </div>
+
+      <div class="filters">
+        <select id="filter-recommendation">
+          <option value="">All Recommendations</option>
+          <option value="Move to Confirm Resolution">Ready to Close</option>
+          <option value="Stay Waiting on Release">Waiting on Release</option>
+          <option value="Stay Backlogged">Still Backlogged</option>
+        </select>
+        <select id="filter-platform">
+          <option value="">All Platforms</option>
+          <option value="Portal">Portal</option>
+          <option value="OSS">OSS</option>
+        </select>
+        <select id="filter-product">
+          <option value="">All Products</option>
+        </select>
+        <input type="text" id="search" placeholder="Search by subject, company, or ticket ID...">
+        <button id="clear-btn">Clear</button>
+      </div>
+
+      <div class="ticket-grid" id="ticket-grid">
+        <div class="no-tickets">No tickets loaded yet. Waiting for triage agents...</div>
+      </div>
+    </div>
+
+    <div class="detail-page" id="detail-page">
+      <a href="#" class="back-link" id="back-link">&larr; Back to Overview</a>
+      <div class="detail-header" id="detail-header"></div>
+      <div class="recommendation-banner" id="recommendation-banner"></div>
+      <div class="section" id="customer-message-section">
+        <h2>Customer Response</h2>
+        <div class="message-box">
+          <pre id="customer-message"></pre>
+          <button class="copy-btn" id="copy-message-btn">Copy to Clipboard</button>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Investigation Findings</h2>
+        <table class="findings-table" id="findings-table"></table>
+      </div>
+      <div class="section">
+        <h2>Fix Timeline</h2>
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div class="section">
+        <h2>Details</h2>
+        <details>
+          <summary>View Raw Data</summary>
+          <pre id="raw-data"></pre>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Ticket data array - agents add tickets here by inserting before the marker comment
+    const ticketData = [
+      // TICKET_DATA_MARKER
+    ];
+
+    let currentTicket = null;
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.textContent;
+    }
+
+    function getRecommendationClass(action) {
+      if (action === 'Move to Confirm Resolution') return 'ready';
+      if (action === 'Stay Waiting on Release') return 'waiting';
+      return 'backlogged';
+    }
+
+    function getRecommendationLabel(action) {
+      if (action === 'Move to Confirm Resolution') return 'Ready to Close';
+      if (action === 'Stay Waiting on Release') return 'Waiting on Release';
+      return 'Still Backlogged';
+    }
+
+    function updateTimestamp() {
+      const timestamps = ticketData.map(function(t) { return t.triageTimestamp; }).filter(Boolean);
+      if (timestamps.length > 0) {
+        const latest = new Date(Math.max.apply(null, timestamps.map(function(t) { return new Date(t).getTime(); })));
+        document.getElementById('report-timestamp').textContent = 'Generated: ' + latest.toLocaleString();
+      }
+    }
+
+    function updateSummary() {
+      const ready = ticketData.filter(function(t) { return t.recommendation && t.recommendation.action === 'Move to Confirm Resolution'; }).length;
+      const waiting = ticketData.filter(function(t) { return t.recommendation && t.recommendation.action === 'Stay Waiting on Release'; }).length;
+      const backlogged = ticketData.filter(function(t) { return t.recommendation && t.recommendation.action === 'Stay Backlogged'; }).length;
+      document.getElementById('total-count').textContent = ticketData.length;
+      document.getElementById('ready-count').textContent = ready;
+      document.getElementById('waiting-count').textContent = waiting;
+      document.getElementById('backlogged-count').textContent = backlogged;
+    }
+
+    function populateProductFilter() {
+      const products = [];
+      ticketData.forEach(function(t) {
+        if (t.product && products.indexOf(t.product) === -1) products.push(t.product);
+      });
+      const select = document.getElementById('filter-product');
+      products.forEach(function(p) {
+        const option = document.createElement('option');
+        option.value = p;
+        option.textContent = p;
+        select.appendChild(option);
+      });
+    }
+
+    function getFilteredTickets() {
+      const recFilter = document.getElementById('filter-recommendation').value;
+      const platformFilter = document.getElementById('filter-platform').value;
+      const productFilter = document.getElementById('filter-product').value;
+      const search = document.getElementById('search').value.toLowerCase();
+      return ticketData.filter(function(ticket) {
+        if (recFilter && (!ticket.recommendation || ticket.recommendation.action !== recFilter)) return false;
+        if (platformFilter && ticket.platform !== platformFilter) return false;
+        if (productFilter && ticket.product !== productFilter) return false;
+        if (search) {
+          const searchable = (ticket.ticketId + ' ' + ticket.subject + ' ' + ticket.company).toLowerCase();
+          if (searchable.indexOf(search) === -1) return false;
+        }
+        return true;
+      });
+    }
+
+    function createTicketCard(ticket) {
+      const recClass = getRecommendationClass(ticket.recommendation ? ticket.recommendation.action : '');
+      const card = document.createElement('div');
+      card.className = 'ticket-card ' + recClass;
+      card.setAttribute('data-ticket-id', ticket.ticketId);
+
+      const ticketIdDiv = document.createElement('div');
+      ticketIdDiv.className = 'ticket-id';
+      ticketIdDiv.textContent = 'HS-' + ticket.ticketId;
+      card.appendChild(ticketIdDiv);
+
+      const subjectDiv = document.createElement('div');
+      subjectDiv.className = 'subject';
+      subjectDiv.textContent = ticket.subject || 'No subject';
+      card.appendChild(subjectDiv);
+
+      const companyDiv = document.createElement('div');
+      companyDiv.className = 'company';
+      companyDiv.textContent = ticket.company || 'Unknown company';
+      card.appendChild(companyDiv);
+
+      const badgesDiv = document.createElement('div');
+      badgesDiv.className = 'badges';
+      if (ticket.platform) {
+        const platformBadge = document.createElement('span');
+        platformBadge.className = 'badge platform';
+        platformBadge.textContent = ticket.platform;
+        badgesDiv.appendChild(platformBadge);
+      }
+      if (ticket.product) {
+        const productBadge = document.createElement('span');
+        productBadge.className = 'badge product';
+        productBadge.textContent = ticket.product;
+        badgesDiv.appendChild(productBadge);
+      }
+      if (ticket.linearIssue && ticket.linearIssue.status) {
+        const linearBadge = document.createElement('span');
+        linearBadge.className = 'badge linear';
+        linearBadge.textContent = ticket.linearIssue.status;
+        badgesDiv.appendChild(linearBadge);
+      }
+      card.appendChild(badgesDiv);
+
+      const recBadge = document.createElement('span');
+      recBadge.className = 'badge recommendation ' + recClass;
+      recBadge.textContent = getRecommendationLabel(ticket.recommendation ? ticket.recommendation.action : '');
+      card.appendChild(recBadge);
+
+      card.addEventListener('click', function() { showDetail(ticket.ticketId); });
+      return card;
+    }
+
+    function renderTickets() {
+      const grid = document.getElementById('ticket-grid');
+      const filteredTickets = getFilteredTickets();
+      grid.textContent = '';
+      if (filteredTickets.length === 0) {
+        const noTickets = document.createElement('div');
+        noTickets.className = 'no-tickets';
+        noTickets.textContent = ticketData.length === 0 ? 'No tickets loaded yet. Waiting for triage agents...' : 'No tickets match your filters.';
+        grid.appendChild(noTickets);
+        return;
+      }
+      filteredTickets.forEach(function(ticket) {
+        grid.appendChild(createTicketCard(ticket));
+      });
+    }
+
+    function showDetail(ticketId) {
+      window.location.hash = 'ticket-' + ticketId;
+    }
+
+    function showOverview() {
+      window.location.hash = '';
+    }
+
+    function renderDetailPage() {
+      const t = currentTicket;
+      const recClass = getRecommendationClass(t.recommendation ? t.recommendation.action : '');
+
+      const header = document.getElementById('detail-header');
+      header.textContent = '';
+      const ticketIdDiv = document.createElement('div');
+      ticketIdDiv.className = 'ticket-id';
+      ticketIdDiv.textContent = 'HS-' + t.ticketId;
+      header.appendChild(ticketIdDiv);
+      const subjectDiv = document.createElement('div');
+      subjectDiv.className = 'subject';
+      subjectDiv.textContent = t.subject || 'No subject';
+      header.appendChild(subjectDiv);
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'meta';
+      const platformBadge = document.createElement('span');
+      platformBadge.className = 'badge platform';
+      platformBadge.textContent = t.platform || 'Unknown';
+      metaDiv.appendChild(platformBadge);
+      const productBadge = document.createElement('span');
+      productBadge.className = 'badge product';
+      productBadge.textContent = t.product || 'Unknown';
+      metaDiv.appendChild(productBadge);
+      const companySpan = document.createElement('span');
+      companySpan.style.color = 'var(--text-muted)';
+      companySpan.textContent = (t.company || '') + (t.instance ? ' (' + t.instance + ')' : '');
+      metaDiv.appendChild(companySpan);
+      header.appendChild(metaDiv);
+
+      const banner = document.getElementById('recommendation-banner');
+      banner.className = 'recommendation-banner ' + recClass;
+      banner.textContent = '';
+      const actionDiv = document.createElement('div');
+      actionDiv.textContent = getRecommendationLabel(t.recommendation ? t.recommendation.action : '');
+      banner.appendChild(actionDiv);
+      const reasonDiv = document.createElement('div');
+      reasonDiv.style.fontWeight = 'normal';
+      reasonDiv.style.marginTop = '4px';
+      reasonDiv.textContent = t.recommendation ? t.recommendation.reason : '';
+      banner.appendChild(reasonDiv);
+
+      document.getElementById('customer-message').textContent = t.recommendation ? t.recommendation.customerMessage : 'No message available';
+
+      const findingsTable = document.getElementById('findings-table');
+      findingsTable.textContent = '';
+      const findings = [];
+      findings.push(['HubSpot Ticket', 'HS-' + t.ticketId, t.links ? t.links.hubspot : null]);
+      if (t.linearIssue && t.linearIssue.id) {
+        findings.push(['Linear Issue', t.linearIssue.id + ' (' + (t.linearIssue.status || 'Unknown') + ')', t.links ? t.links.linear : null]);
+      }
+      if (t.fixStatus && t.fixStatus.changelogFound) {
+        findings.push(['CHANGELOG', t.fixStatus.changelogVersion + ' - ' + t.fixStatus.changelogDate, t.links ? t.links.changelog : null]);
+      }
+      if (t.fixStatus && t.fixStatus.npmPublished) {
+        findings.push(['npm Package', t.fixStatus.npmVersion + ' - ' + t.fixStatus.npmPublishDate, t.links ? t.links.npm : null]);
+      }
+      if (t.fixStatus && t.fixStatus.prMerged) {
+        findings.push(['Fix PR', '#' + t.fixStatus.prNumber + ' - ' + t.fixStatus.prMergeDate, t.links ? t.links.pr : null]);
+      }
+      if (t.fixStatus && t.fixStatus.renovatePrMerged) {
+        findings.push(['Renovate PR', '#' + t.fixStatus.renovatePrNumber + ' - ' + t.fixStatus.renovatePrMergeDate, t.links ? t.links.renovatePr : null]);
+      }
+      if (t.fixStatus && t.fixStatus.deployedToInstance !== null && t.fixStatus.deployedToInstance !== undefined) {
+        findings.push(['Deployment', t.fixStatus.deployedToInstance ? 'Yes - ' + t.fixStatus.deploymentDate : 'Not deployed', null]);
+      }
+      findings.forEach(function(finding) {
+        const tr = document.createElement('tr');
+        const labelTd = document.createElement('td');
+        labelTd.className = 'label';
+        labelTd.textContent = finding[0];
+        tr.appendChild(labelTd);
+        const valueTd = document.createElement('td');
+        valueTd.className = 'value';
+        valueTd.textContent = finding[1];
+        tr.appendChild(valueTd);
+        const linkTd = document.createElement('td');
+        if (finding[2]) {
+          const link = document.createElement('a');
+          link.href = finding[2];
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.className = 'link-btn';
+          link.textContent = 'Open';
+          linkTd.appendChild(link);
+        }
+        tr.appendChild(linkTd);
+        findingsTable.appendChild(tr);
+      });
+
+      const timelineDiv = document.getElementById('timeline');
+      timelineDiv.textContent = '';
+      const steps = [];
+      steps.push({ name: 'PR Merged', date: t.fixStatus ? t.fixStatus.prMergeDate : null, done: t.fixStatus ? t.fixStatus.prMerged : null });
+      steps.push({ name: 'CHANGELOG', date: t.fixStatus ? t.fixStatus.changelogDate : null, done: t.fixStatus ? t.fixStatus.changelogFound : null });
+      steps.push({ name: 'npm Published', date: t.fixStatus ? t.fixStatus.npmPublishDate : null, done: t.fixStatus ? t.fixStatus.npmPublished : null });
+      if (t.platform === 'Portal') {
+        steps.push({ name: 'Renovate PR', date: t.fixStatus ? t.fixStatus.renovatePrMergeDate : null, done: t.fixStatus ? t.fixStatus.renovatePrMerged : null });
+        steps.push({ name: 'Deployed', date: t.fixStatus ? t.fixStatus.deploymentDate : null, done: t.fixStatus ? t.fixStatus.deployedToInstance : null });
+      }
+      steps.forEach(function(step) {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'timeline-step';
+        const dot = document.createElement('div');
+        const dotClass = step.done === true ? 'complete' : (step.done === false ? 'pending' : 'na');
+        dot.className = 'dot ' + dotClass;
+        dot.textContent = step.done === true ? '\u2713' : (step.done === false ? '\u25CB' : '-');
+        stepDiv.appendChild(dot);
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'name';
+        nameDiv.textContent = step.name;
+        stepDiv.appendChild(nameDiv);
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'date';
+        dateDiv.textContent = step.date || '-';
+        stepDiv.appendChild(dateDiv);
+        timelineDiv.appendChild(stepDiv);
+      });
+
+      document.getElementById('raw-data').textContent = JSON.stringify(t, null, 2);
+    }
+
+    function route() {
+      const hash = window.location.hash;
+      if (hash.indexOf('#ticket-') === 0) {
+        const ticketId = hash.replace('#ticket-', '');
+        currentTicket = null;
+        for (var i = 0; i < ticketData.length; i++) {
+          if (ticketData[i].ticketId === ticketId) {
+            currentTicket = ticketData[i];
+            break;
+          }
+        }
+        if (currentTicket) {
+          renderDetailPage();
+          document.getElementById('overview-page').classList.add('hidden');
+          document.getElementById('detail-page').classList.add('active');
+          return;
+        }
+      }
+      document.getElementById('overview-page').classList.remove('hidden');
+      document.getElementById('detail-page').classList.remove('active');
+    }
+
+    function copyCustomerMessage() {
+      const text = document.getElementById('customer-message').textContent;
+      navigator.clipboard.writeText(text).then(function() {
+        const btn = document.getElementById('copy-message-btn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy to Clipboard';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    function init() {
+      updateTimestamp();
+      updateSummary();
+      populateProductFilter();
+      renderTickets();
+
+      document.getElementById('filter-recommendation').addEventListener('change', renderTickets);
+      document.getElementById('filter-platform').addEventListener('change', renderTickets);
+      document.getElementById('filter-product').addEventListener('change', renderTickets);
+      document.getElementById('search').addEventListener('input', renderTickets);
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('filter-recommendation').value = '';
+        document.getElementById('filter-platform').value = '';
+        document.getElementById('filter-product').value = '';
+        document.getElementById('search').value = '';
+        renderTickets();
+      });
+      document.getElementById('back-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        showOverview();
+      });
+      document.getElementById('copy-message-btn').addEventListener('click', copyCustomerMessage);
+
+      window.addEventListener('hashchange', route);
+      route();
+    }
+
+    init();
+  </script>
+</body>
+</html>
