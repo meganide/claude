@@ -1,4 +1,21 @@
 {
+  "permissions": {
+    "ask": [
+      "Bash(portal-ops *)"
+    ],
+    "deny": [
+      "Bash(portal-ops lifecycle restart *)",
+      "Bash(portal-ops cloudrun restart *)",
+      "Bash(portal-ops cloudrun rollback *)",
+      "Bash(portal-ops config rollback *)",
+      "Bash(portal-ops cloudrun env set *)",
+      "Bash(portal-ops cloudrun env unset *)",
+      "Bash(portal-ops root enable *)",
+      "Bash(portal-ops root disable *)",
+      "Bash(portal-ops root rotate-password *)",
+      "Bash(portal-ops tasks trigger *)"
+    ]
+  },
   "model": "claude-opus-4-5@20251101",
   "statusLine": {
     "type": "command",
@@ -30,10 +47,5 @@
         }
       ]
     }
-  ],
-  "permissions": {
-    "ask": [
-      "Bash(portal-ops *)"
-    ]
-  }
+  ]
 }
