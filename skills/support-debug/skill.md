@@ -56,6 +56,14 @@ Support tickets come through HubSpot. The **HubSpot MCP** is available for:
 
 ### Local Codebases (~/projects/)
 
+**⚠️ CRITICAL: Before reading or searching any code in `~/projects/`, ALWAYS run the pull script first:**
+
+```bash
+~/projects/pull-all.sh
+```
+
+This ensures you have the latest commits and data from all repositories. **Never skip this step.**
+
 | Codebase | Purpose |
 |----------|---------|
 | `backstage-oss` | Backstage open source core |
@@ -268,7 +276,12 @@ Don't just search - **read and understand the code** to determine:
 - Why is it occurring? (understand the code flow)
 - What's the expected vs actual behavior?
 
-Search and then dive deep into relevant codebases:
+**First, pull latest changes:**
+```bash
+~/projects/pull-all.sh
+```
+
+Then search and dive deep into relevant codebases:
 
 ```bash
 # Search in backstage-plugins for plugin code
@@ -373,6 +386,7 @@ When investigating an issue:
 10. **Create visual summary (REQUIRED)** - ALWAYS create a playground with an interactive debug summary. This is mandatory for every investigation.
 
 Always:
+- **Run `~/projects/pull-all.sh` before reading any code in ~/projects/** - ensures latest commits
 - **NEVER modify files, run destructive commands, or make any changes - READ ONLY**
 - Check both open AND closed GitHub issues
 - Check BOTH public (github.com) AND private (spotify.ghe.com) repos - navigate to local folders and use `gh` commands
