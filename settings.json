@@ -46,7 +46,15 @@
       "Bash(kubectl patch *)",
       "Bash(kubectl edit *)",
       "Bash(kubectl scale *)",
-      "Bash(kubectl rollout *)"
+      "Bash(kubectl rollout *)",
+      "Bash(linear issue delete *)",
+      "Bash(linear issue d *)",
+      "Bash(linear team delete *)",
+      "Bash(linear label delete *)",
+      "Bash(linear document delete *)",
+      "Bash(linear document d *)",
+      "Bash(linear initiative delete *)",
+      "Bash(linear milestone delete *)"
     ]
   },
   "model": "claude-opus-4-5@20251101",

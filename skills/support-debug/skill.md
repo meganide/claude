@@ -540,8 +540,10 @@ If you cannot find concrete evidence:
 
 **Save all playground HTML files to:** `~/projects/support-debugs/`
 
-Use a descriptive filename format: `<customer>-<issue>-<date>.html`
-Example: `acme-soundcheck-config-2026-02-02.html`
+Use a descriptive filename format: `<ticketid>-<customer>-<issue>-<date>.html`
+Example: `12345678-acme-soundcheck-config-2026-02-02.html`
+
+If no ticket ID is available, use `no-ticket` as the prefix.
 
 To create it, simply prompt: "Create a playground about this debugging session" or include the details inline.
 
@@ -649,7 +651,7 @@ Create an interactive HTML page with:
 2. Gather all findings, logs, configs, and evidence
 3. Draft customer response
 4. Create a playground with the summary (e.g., "Create a playground about this debugging session...")
-5. Save to `~/projects/support-debugs/<customer>-<issue>-<date>.html`
+5. Save to `~/projects/support-debugs/<ticketid>-<customer>-<issue>-<date>.html`
 6. Review the generated visualization
 
 ---
