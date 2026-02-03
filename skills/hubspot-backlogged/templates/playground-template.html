@@ -63,6 +63,16 @@
     .badge.recommendation.waiting { background: var(--waiting-bg); color: #854d0e; }
     .badge.recommendation.backlogged { background: var(--backlogged-bg); color: #991b1b; }
 
+    /* Status transition display */
+    .status-transition { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px; background: var(--bg); border-radius: 6px; }
+    .status-box { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+    .status-box.current { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
+    .status-box.target { font-weight: 600; }
+    .status-box.target.ready { background: var(--ready-bg); color: #166534; border: 1px solid var(--ready); }
+    .status-box.target.waiting { background: var(--waiting-bg); color: #854d0e; border: 1px solid var(--waiting); }
+    .status-box.target.backlogged { background: var(--backlogged-bg); color: #991b1b; border: 1px solid var(--backlogged); }
+    .status-arrow { color: var(--text-muted); font-size: 16px; }
+
     .copy-btn { font-size: 12px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
     .copy-btn:hover { background: var(--border); }
     .copy-btn.copied { background: var(--ready-bg); border-color: var(--ready); }
@@ -115,6 +125,17 @@
     details pre { margin-top: 8px; background: var(--bg); padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; }
 
     .no-tickets { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+
+    /* Checkbox for tracking emailed status */
+    .ticket-checkbox { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .ticket-checkbox input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--ready); }
+    .ticket-checkbox label { font-size: 13px; color: var(--text-muted); cursor: pointer; user-select: none; }
+    .ticket-checkbox label:hover { color: var(--text); }
+    .ticket-card.emailed { opacity: 0.6; }
+    .ticket-card.emailed .subject { text-decoration: line-through; }
+    .stat-card.emailed { border-left: 4px solid #8b5cf6; }
+    .stat-card.emailed .count { color: #8b5cf6; }
+    .badge.emailed-status { background: #ede9fe; color: #6d28d9; }
   </style>
 </head>
 <body>
@@ -142,6 +163,10 @@
           <span class="count" id="backlogged-count">0</span>
           <span class="label">Still Backlogged</span>
         </div>
+        <div class="stat-card emailed">
+          <span class="count" id="emailed-count">0</span>
+          <span class="label">Emailed</span>
+        </div>
       </div>
 
       <div class="filters">
@@ -158,6 +183,11 @@
         </select>
         <select id="filter-product">
           <option value="">All Products</option>
+        </select>
+        <select id="filter-emailed">
+          <option value="">All Tickets</option>
+          <option value="not-emailed">Not Emailed Yet</option>
+          <option value="emailed">Already Emailed</option>
         </select>
         <input type="text" id="search" placeholder="Search by subject, company, or ticket ID...">
         <button id="clear-btn">Clear</button>
@@ -177,6 +207,10 @@
         <div class="message-box">
           <pre id="customer-message"></pre>
           <button class="copy-btn" id="copy-message-btn">Copy to Clipboard</button>
+        </div>
+        <div class="ticket-checkbox" style="margin-top: 16px; border-top: none; padding-top: 0;">
+          <input type="checkbox" id="detail-emailed-checkbox">
+          <label for="detail-emailed-checkbox">I've emailed this customer</label>
         </div>
       </div>
       <div class="section">
@@ -204,6 +238,32 @@
     ];
 
     let currentTicket = null;
+    const EMAILED_STORAGE_KEY = 'hubspot-backlog-emailed';
+
+    function getEmailedTickets() {
+      try {
+        const stored = localStorage.getItem(EMAILED_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function setTicketEmailed(ticketId, emailed) {
+      const data = getEmailedTickets();
+      if (emailed) {
+        data[ticketId] = Date.now();
+      } else {
+        delete data[ticketId];
+      }
+      localStorage.setItem(EMAILED_STORAGE_KEY, JSON.stringify(data));
+      updateSummary();
+    }
+
+    function isTicketEmailed(ticketId) {
+      const data = getEmailedTickets();
+      return !!data[ticketId];
+    }
 
     function escapeHtml(text) {
       if (!text) return '';
@@ -236,10 +296,12 @@
       const ready = ticketData.filter(function(t) { return t.recommendation && t.recommendation.action === 'Move to Confirm Resolution'; }).length;
       const waiting = ticketData.filter(function(t) { return t.recommendation && t.recommendation.action === 'Stay Waiting on Release'; }).length;
       const backlogged = ticketData.filter(function(t) { return t.recommendation && t.recommendation.action === 'Stay Backlogged'; }).length;
+      const emailed = ticketData.filter(function(t) { return isTicketEmailed(t.ticketId); }).length;
       document.getElementById('total-count').textContent = ticketData.length;
       document.getElementById('ready-count').textContent = ready;
       document.getElementById('waiting-count').textContent = waiting;
       document.getElementById('backlogged-count').textContent = backlogged;
+      document.getElementById('emailed-count').textContent = emailed;
     }
 
     function populateProductFilter() {
@@ -260,11 +322,17 @@
       const recFilter = document.getElementById('filter-recommendation').value;
       const platformFilter = document.getElementById('filter-platform').value;
       const productFilter = document.getElementById('filter-product').value;
+      const emailedFilter = document.getElementById('filter-emailed').value;
       const search = document.getElementById('search').value.toLowerCase();
       return ticketData.filter(function(ticket) {
         if (recFilter && (!ticket.recommendation || ticket.recommendation.action !== recFilter)) return false;
         if (platformFilter && ticket.platform !== platformFilter) return false;
         if (productFilter && ticket.product !== productFilter) return false;
+        if (emailedFilter) {
+          const ticketIsEmailed = isTicketEmailed(ticket.ticketId);
+          if (emailedFilter === 'emailed' && !ticketIsEmailed) return false;
+          if (emailedFilter === 'not-emailed' && ticketIsEmailed) return false;
+        }
         if (search) {
           const searchable = (ticket.ticketId + ' ' + ticket.subject + ' ' + ticket.company).toLowerCase();
           if (searchable.indexOf(search) === -1) return false;
@@ -316,10 +384,56 @@
       }
       card.appendChild(badgesDiv);
 
-      const recBadge = document.createElement('span');
-      recBadge.className = 'badge recommendation ' + recClass;
-      recBadge.textContent = getRecommendationLabel(ticket.recommendation ? ticket.recommendation.action : '');
-      card.appendChild(recBadge);
+      // Status transition: Current → Recommended
+      const statusTransition = document.createElement('div');
+      statusTransition.className = 'status-transition';
+
+      const currentStatusBox = document.createElement('span');
+      currentStatusBox.className = 'status-box current';
+      currentStatusBox.textContent = ticket.currentStatus || 'Unknown';
+      statusTransition.appendChild(currentStatusBox);
+
+      const arrow = document.createElement('span');
+      arrow.className = 'status-arrow';
+      arrow.textContent = '→';
+      statusTransition.appendChild(arrow);
+
+      const targetStatusBox = document.createElement('span');
+      targetStatusBox.className = 'status-box target ' + recClass;
+      targetStatusBox.textContent = getRecommendationLabel(ticket.recommendation ? ticket.recommendation.action : '');
+      statusTransition.appendChild(targetStatusBox);
+
+      card.appendChild(statusTransition);
+
+      // Checkbox for tracking emailed status
+      const checkboxDiv = document.createElement('div');
+      checkboxDiv.className = 'ticket-checkbox';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = 'emailed-' + ticket.ticketId;
+      checkbox.checked = isTicketEmailed(ticket.ticketId);
+      checkbox.addEventListener('change', function(e) {
+        e.stopPropagation();
+        setTicketEmailed(ticket.ticketId, checkbox.checked);
+        if (checkbox.checked) {
+          card.classList.add('emailed');
+        } else {
+          card.classList.remove('emailed');
+        }
+        renderTickets();
+      });
+      checkbox.addEventListener('click', function(e) { e.stopPropagation(); });
+      const label = document.createElement('label');
+      label.htmlFor = 'emailed-' + ticket.ticketId;
+      label.textContent = 'Emailed customer';
+      label.addEventListener('click', function(e) { e.stopPropagation(); });
+      checkboxDiv.appendChild(checkbox);
+      checkboxDiv.appendChild(label);
+      card.appendChild(checkboxDiv);
+
+      if (isTicketEmailed(ticket.ticketId)) {
+        card.classList.add('emailed');
+      }
 
       card.addEventListener('click', function() { showDetail(ticket.ticketId); });
       return card;
@@ -382,9 +496,43 @@
       const banner = document.getElementById('recommendation-banner');
       banner.className = 'recommendation-banner ' + recClass;
       banner.textContent = '';
-      const actionDiv = document.createElement('div');
-      actionDiv.textContent = getRecommendationLabel(t.recommendation ? t.recommendation.action : '');
-      banner.appendChild(actionDiv);
+
+      // Status transition in banner
+      const statusLine = document.createElement('div');
+      statusLine.style.display = 'flex';
+      statusLine.style.alignItems = 'center';
+      statusLine.style.gap = '12px';
+      statusLine.style.marginBottom = '8px';
+
+      const currentLabel = document.createElement('span');
+      currentLabel.textContent = 'Current: ';
+      currentLabel.style.fontWeight = 'normal';
+      statusLine.appendChild(currentLabel);
+
+      const currentValue = document.createElement('span');
+      currentValue.textContent = t.currentStatus || 'Unknown';
+      currentValue.style.padding = '4px 8px';
+      currentValue.style.background = 'rgba(255,255,255,0.3)';
+      currentValue.style.borderRadius = '4px';
+      statusLine.appendChild(currentValue);
+
+      const arrowSpan = document.createElement('span');
+      arrowSpan.textContent = '→';
+      arrowSpan.style.fontSize = '18px';
+      statusLine.appendChild(arrowSpan);
+
+      const recLabel = document.createElement('span');
+      recLabel.textContent = 'Move to: ';
+      recLabel.style.fontWeight = 'normal';
+      statusLine.appendChild(recLabel);
+
+      const recValue = document.createElement('span');
+      recValue.textContent = getRecommendationLabel(t.recommendation ? t.recommendation.action : '');
+      recValue.style.fontWeight = '700';
+      statusLine.appendChild(recValue);
+
+      banner.appendChild(statusLine);
+
       const reasonDiv = document.createElement('div');
       reasonDiv.style.fontWeight = 'normal';
       reasonDiv.style.marginTop = '4px';
@@ -469,6 +617,13 @@
       });
 
       document.getElementById('raw-data').textContent = JSON.stringify(t, null, 2);
+
+      // Set detail page checkbox state
+      const detailCheckbox = document.getElementById('detail-emailed-checkbox');
+      detailCheckbox.checked = isTicketEmailed(t.ticketId);
+      detailCheckbox.onchange = function() {
+        setTicketEmailed(t.ticketId, detailCheckbox.checked);
+      };
     }
 
     function route() {
@@ -515,11 +670,13 @@
       document.getElementById('filter-recommendation').addEventListener('change', renderTickets);
       document.getElementById('filter-platform').addEventListener('change', renderTickets);
       document.getElementById('filter-product').addEventListener('change', renderTickets);
+      document.getElementById('filter-emailed').addEventListener('change', renderTickets);
       document.getElementById('search').addEventListener('input', renderTickets);
       document.getElementById('clear-btn').addEventListener('click', function() {
         document.getElementById('filter-recommendation').value = '';
         document.getElementById('filter-platform').value = '';
         document.getElementById('filter-product').value = '';
+        document.getElementById('filter-emailed').value = '';
         document.getElementById('search').value = '';
         renderTickets();
       });

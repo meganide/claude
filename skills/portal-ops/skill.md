@@ -104,13 +104,35 @@ portal-ops logs follow -i <instance>  # Real-time streaming
 
 ```bash
 portal-ops cloudrun list -i <instance>
-portal-ops cloudrun revisions -i <instance>
+portal-ops cloudrun revisions -i <instance> -r <region>
 portal-ops cloudrun errors -i <instance>
 
 # Environment variables
-portal-ops cloudrun env list -i <instance>
+portal-ops cloudrun env list -i <instance> -r <region>
 portal-ops cloudrun env get <name> -i <instance>
 ```
+
+**Important**: The `-r <region>` flag is required for `revisions` and `env` commands. The default region is `us-central1`, but many instances are in `europe-west1`. Use `portal-ops get <instance>` to find the region first.
+
+### Check Portal Version
+
+To find which Portal version a customer is running:
+
+```bash
+# Step 1: Look up the instance name and region
+portal-ops lookup <customer-name>
+portal-ops get <instance>  # Note the region
+
+# Step 2: Get the container image (includes version tag)
+gcloud run services describe <instance> \
+  --project=<instance> \
+  --region=<region> \
+  --format='value(spec.template.spec.containers[0].image)'
+```
+
+Example output: `europe-docker.pkg.dev/spc-global-admin/ghcr/backstage-portal:1.47.1-portal.4`
+
+The version is the image tag after the colon (e.g., `1.47.1-portal.4`).
 
 ### NPM Registry
 

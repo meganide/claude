@@ -148,7 +148,7 @@ For Portal platform:
 
 1. **Same as OSS Steps 1-4 above**
 
-2. **Check Renovate PR in backstage-portal**:
+2. **Check Renovate PR in backstage-portal** (for plugin updates):
    ```bash
    cd ~/projects/backstage-portal
    gh pr list --state all --search "renovate @spotify/backstage-plugin-<name>@<version>"
@@ -156,12 +156,51 @@ For Portal platform:
    - Note if merged and merge date
    - Get PR URL
 
-3. **Check deployment status** using portal-ops:
+3. **Determine which Portal version contains the fix**:
+
+   If the fix is in backstage-portal itself (not a plugin), find when the fix PR was merged:
    ```bash
-   portal-ops cloudrun revisions -i <instance>
+   cd ~/projects/backstage-portal
+   gh pr view <PR-number> --json mergedAt,title
    ```
-   - Compare deployment date vs Renovate merge date
-   - Determine if fix is deployed
+
+   Then find which Portal release includes it by checking release PRs:
+   ```bash
+   cd ~/projects/backstage-portal
+   gh pr list --state merged --search "chore: release" --limit 10
+   ```
+
+   Portal releases follow a cutoff model:
+   - Commits merged before the cutoff date are included in that release
+   - Typical turnaround is ~1-2 days (PR merged 2026-01-24 → release 1.47.1-portal.0 cutoff 2026-01-26)
+
+   You can also check the git tags:
+   ```bash
+   git tag --sort=-creatordate | grep portal | head -10
+   ```
+
+4. **Check customer's Portal version and deployment status**:
+
+   First, look up the instance and get its region:
+   ```bash
+   portal-ops lookup <company-name>
+   portal-ops get <instance>  # Note the region (e.g., europe-west1)
+   ```
+
+   Then get the Portal version from the container image:
+   ```bash
+   gcloud run services describe <instance> \
+     --project=<instance> \
+     --region=<region> \
+     --format='value(spec.template.spec.containers[0].image)'
+   ```
+
+   Example output: `europe-docker.pkg.dev/spc-global-admin/ghcr/backstage-portal:1.47.1-portal.4`
+
+   The version is the image tag (e.g., `1.47.1-portal.4`).
+
+   - Compare customer's Portal version vs the version containing the fix
+   - If customer version >= fix version, the fix is deployed
 
 ## Add Ticket to Shared HTML Playground
 

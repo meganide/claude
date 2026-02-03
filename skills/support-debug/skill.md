@@ -57,9 +57,45 @@ Support tickets come through HubSpot. The **HubSpot MCP** is available for:
 
 **When given a ticket ID**, use HubSpot MCP to:
 1. Get the ticket details (subject, description, status)
-2. Get the conversation thread for full context
+2. **CRITICAL: Get the ENTIRE conversation thread** - customers often provide follow-up details, answers to questions, error logs, or additional context in replies. Never skip this step.
 3. Find the associated company to identify the customer
 4. Use company name with `portal-ops lookup` to find Portal instance
+
+### Fetching Complete Conversation History (REQUIRED)
+
+**Always fetch and read the complete conversation thread for every ticket.** The initial ticket description often lacks crucial details that appear in follow-up messages.
+
+**Why this matters:**
+- Customers frequently reply with error logs, screenshots, or config snippets
+- Previous support replies may contain partial solutions or questions
+- The customer may have already tried fixes mentioned in earlier replies
+- Context from the full thread prevents asking redundant questions
+
+**How to fetch the complete conversation:**
+
+1. **Get ticket associations to find the conversation:**
+```yaml
+hubspot-list-associations:
+  objectType: tickets
+  objectId: <ticketId>
+  toObjectType: conversations
+```
+
+2. **Fetch all messages in the conversation thread:**
+Use the conversation ID to retrieve all messages, including:
+- Original ticket submission
+- All customer replies
+- All support team replies
+- Any attachments or inline content
+
+3. **Read through the ENTIRE thread** before starting investigation. Look for:
+- Error messages or stack traces shared in replies
+- Config snippets or screenshots
+- Answers to previous questions
+- Workarounds already attempted
+- Timeline details ("this started after we upgraded...")
+
+**Do NOT start investigating until you have read the complete conversation history.**
 
 ### Local Codebases (~/projects/)
 
@@ -172,10 +208,13 @@ Then use `/gcp-debug` with the project ID for deeper log analysis.
 ### Step 0: Start from Ticket (if provided)
 
 If given a **HubSpot ticket ID**, use the HubSpot MCP to:
-1. Get the ticket details and conversation history
-2. Find the associated company
-3. Use company name with `portal-ops lookup` to find the Portal instance
-4. Proceed with full context
+1. Get the ticket details (subject, description, status, custom fields)
+2. **Fetch and read the ENTIRE conversation thread** - this is critical. Customers often share error logs, config snippets, answers, and additional context in follow-up replies. Read every message before proceeding.
+3. Find the associated company
+4. Use company name with `portal-ops lookup` to find the Portal instance
+5. Proceed with full context from the complete conversation
+
+**Do NOT start investigating until you have read ALL messages in the conversation thread.**
 
 ### Step 1: Gather Information
 
@@ -373,7 +412,7 @@ Draft message to send to the customer:
 - Step-by-step resolution instructions
 - Links to relevant documentation
 - Professional and helpful tone
-- **NO markdown formatting** (no **bold**, ## headings, `code blocks`, etc.) - use plain text with line breaks only
+- **Write like a human** - NO AI formatting (no dashes/bullets, no **bold**, no ## headings, no `code blocks`). Use natural paragraphs and conversational tone. Write complete sentences, not lists.
 ```
 
 ## Quick Actions
@@ -402,8 +441,9 @@ When investigating an issue:
 7. **Dive into code** - Search codebases for relevant implementation
 8. **Document findings** - Use the output format above
 9. **Propose solution** - Clear steps the customer can follow
-10. **Draft customer response** - Always include a ready-to-send message
-11. **Create visual summary (REQUIRED)** - ALWAYS create a playground with an interactive debug summary. This is mandatory for every investigation.
+10. **Draft customer response** - Always include a ready-to-send message (human-like, no AI formatting)
+11. **Fact-check findings (REQUIRED)** - Before finalizing, run the fact-checker sub-agent to validate all claims
+12. **Create visual summary (REQUIRED)** - ALWAYS create a playground with an interactive debug summary. This is mandatory for every investigation.
 
 Always:
 - **Ask, don't assume** - If platform (Backstage OSS vs Portal) is not explicitly stated, use `AskUserQuestion` to clarify. Never infer or guess.
@@ -534,6 +574,72 @@ If you cannot find concrete evidence:
 3. Suggest next steps to gather evidence
 4. Do NOT present speculation as fact
 
+---
+
+## Fact-Checker Sub-Agent (REQUIRED)
+
+**Before finalizing any investigation, you MUST run the fact-checker sub-agent to validate your findings.**
+
+### Why Fact-Checking is Required
+
+- Prevents incorrect information from reaching customers
+- Validates that all code references and URLs are accurate
+- Ensures root cause analysis is logically sound
+- Catches speculation disguised as facts
+
+### How to Run the Fact-Checker
+
+After completing your investigation and drafting findings, use the Task tool to spawn the fact-checker:
+
+```
+Task:
+  subagent_type: general-purpose
+  description: Fact-check support investigation
+  prompt: |
+    <Read the fact-checker instructions from: ~/.claude/skills/support-debug/agents/fact-checker.md>
+
+    ## Findings to Validate
+    <your complete investigation findings>
+
+    ## Evidence Collected
+    <list all code references, URLs, log excerpts>
+
+    ## Proposed Root Cause
+    <your root cause analysis>
+
+    ## Proposed Resolution
+    <your resolution steps>
+
+    ## Customer Response Draft
+    <your drafted customer message>
+```
+
+### Handling Fact-Check Results
+
+| Result | Action |
+|--------|--------|
+| **PASS** | Proceed to create visual summary |
+| **NEEDS_REVISION** | Fix the identified issues, then re-run fact-checker |
+| **FAIL** | Major issues found - revise findings significantly, then re-run |
+
+### Iteration Loop
+
+1. Run fact-checker
+2. If PASS → continue to visual summary
+3. If NEEDS_REVISION or FAIL → fix issues based on report
+4. Re-run fact-checker
+5. Repeat until PASS (max 3 iterations)
+
+If 3 iterations fail, flag the investigation as "needs human review" and document what couldn't be verified.
+
+### Sub-Agent Files
+
+| Agent | Path | Purpose |
+|-------|------|---------|
+| Fact Checker | `~/.claude/skills/support-debug/agents/fact-checker.md` | Validates all claims before finalizing |
+
+---
+
 ## Final Step: Visual Debug Summary (REQUIRED)
 
 **ALWAYS create a visual debug summary after completing any investigation.** This is mandatory, not optional. Every support debugging session must end with an interactive visual summary.
@@ -580,9 +686,11 @@ The playground should visualize:
    - Verification steps
 
 5. **Customer Response**
-   - Ready-to-send message (plain text, no markdown formatting)
-   - Professional, clear, and helpful tone
-   - Links to relevant documentation
+   - Ready-to-send message written like a human (no AI formatting)
+   - Natural paragraphs, conversational tone, complete sentences
+   - NO: dashes, bullets, bold, headers, code blocks
+   - YES: flowing text, "I" statements, friendly but professional
+   - Include relevant links inline within sentences
 
 6. **Conversation Log**
    - Summary of our back-and-forth discussion
@@ -632,7 +740,7 @@ Create a visual debugging summary for a support issue investigation.
 <summary of our debugging conversation>
 
 ## Customer Response
-<draft message to send - plain text only, no markdown formatting>
+<draft message to send - written like a human, not AI. Use natural paragraphs, complete sentences, conversational tone. NO bullets, dashes, bold, headers, or code blocks. Write as if you're sending a helpful email to a colleague.>
 
 Create an interactive HTML page with:
 1. Clean, professional design
