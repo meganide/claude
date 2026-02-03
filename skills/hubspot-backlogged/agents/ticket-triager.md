@@ -161,23 +161,48 @@ For Portal platform:
    If the fix is in backstage-portal itself (not a plugin), find when the fix PR was merged:
    ```bash
    cd ~/projects/backstage-portal
-   gh pr view <PR-number> --json mergedAt,title
+   gh pr view <PR-number> --json mergedAt,title,mergeCommit
    ```
 
-   Then find which Portal release includes it by checking release PRs:
+   **CRITICAL: Verify the fix is actually RELEASED, not just merged.**
+
+   A PR merged to main is NOT automatically released. You must verify:
+
+   **Step A: Get the merge commit SHA**
    ```bash
    cd ~/projects/backstage-portal
-   gh pr list --state merged --search "chore: release" --limit 10
+   gh pr view <PR-number> --json mergeCommit --jq '.mergeCommit.oid'
    ```
 
-   Portal releases follow a cutoff model:
-   - Commits merged before the cutoff date are included in that release
-   - Typical turnaround is ~1-2 days (PR merged 2026-01-24 → release 1.47.1-portal.0 cutoff 2026-01-26)
-
-   You can also check the git tags:
+   **Step B: Check which git tags contain this commit**
    ```bash
-   git tag --sort=-creatordate | grep portal | head -10
+   cd ~/projects/backstage-portal
+   git fetch origin --tags
+   git tag --contains <merge-commit-sha> | grep portal | head -5
    ```
+
+   If no tags are returned, the fix is merged but NOT in any release tag yet.
+
+   **Step C: Verify the tag is published as a Docker image**
+   ```bash
+   gcloud artifacts docker images list \
+     europe-docker.pkg.dev/spc-global-admin/ghcr/backstage-portal \
+     --include-tags --filter="tags~<version-tag>" \
+     --format='table(TAGS,CREATE_TIME)'
+   ```
+
+   Example: If git says commit is in `1.47.3-portal.0`, verify that tag exists in the registry.
+   If the tag is NOT in the registry, the fix is NOT released yet.
+
+   **Summary of release states:**
+   | State | Merged to main? | In git tag? | In Docker registry? | Status |
+   |-------|-----------------|-------------|---------------------|--------|
+   | Not merged | No | No | No | Still in development |
+   | Merged only | Yes | No | No | Merged but NOT released |
+   | Tagged only | Yes | Yes | No | Tagged but NOT published |
+   | Released | Yes | Yes | Yes | Actually released ✓ |
+
+   Only mark as "released" if ALL THREE are true: merged + tagged + published.
 
 4. **Check customer's Portal version and deployment status**:
 
@@ -248,7 +273,10 @@ Build a JSON object with this structure:
     "prMerged": <true/false>,
     "prNumber": "<number or null>",
     "prMergeDate": "<YYYY-MM-DD or null>",
+    "prMergeCommit": "<sha or null>",
     "prUrl": "<github-pr-url or null>",
+    "prInReleaseTag": "<version-tag or null>",
+    "prReleaseTagPublished": <true/false/null>,
     "renovatePrMerged": <true/false>,
     "renovatePrNumber": "<number or null>",
     "renovatePrMergeDate": "<YYYY-MM-DD or null>",
@@ -329,9 +357,17 @@ Added ticket HS-<ticketId> to playground: <playgroundPath>
 | OSS: Fix in changeset only | Stay Waiting on Release |
 | OSS: No fix found | Stay Backlogged |
 | Portal: Fix deployed to instance | Move to Confirm Resolution |
+| Portal: Fix in released version, not deployed | Stay Waiting on Release |
+| Portal: Fix merged but NOT in released version | Stay Waiting on Release (note: awaiting release) |
 | Portal: Fix in npm, not deployed | Stay Waiting on Release |
 | Portal: Fix in changeset | Stay Waiting on Release |
 | Portal: No fix found | Stay Backlogged |
+
+**IMPORTANT for Portal fixes:**
+- "Merged to main" ≠ "Released"
+- A fix is only "released" when the merge commit is in a git tag AND that tag is published to the Docker registry
+- If PR is merged but not in any release tag, mark as "Waiting on Release (merged, pending release cut)"
+- If PR is in a release tag but tag isn't published, mark as "Waiting on Release (tagged, pending publish)"
 
 ## Important Notes
 
