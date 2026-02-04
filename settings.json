@@ -54,7 +54,14 @@
       "Bash(linear document delete *)",
       "Bash(linear document d *)",
       "Bash(linear initiative delete *)",
-      "Bash(linear milestone delete *)"
+      "Bash(linear milestone delete *)",
+      "mcp__hubspot__hubspot-batch-create-associations(*)",
+      "mcp__hubspot__hubspot-batch-create-objects(*)",
+      "mcp__hubspot__hubspot-batch-update-objects(*)",
+      "mcp__hubspot__hubspot-create-property(*)",
+      "mcp__hubspot__hubspot-update-property(*)",
+      "mcp__hubspot__hubspot-create-engagement(*)",
+      "mcp__hubspot__hubspot-update-engagement(*)"
     ]
   },
   "model": "claude-opus-4-5@20251101",
