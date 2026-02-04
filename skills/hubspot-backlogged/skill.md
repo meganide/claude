@@ -31,13 +31,14 @@ Automated workflow to check the status of fixes for HubSpot support tickets in t
 
 ## Architecture
 
-This skill uses a **parallel orchestration pattern** with shared HTML file:
+This skill uses a **parallel orchestration pattern** with separate ticket files (to avoid race conditions):
 
 1. **Phase 1: Fetch Ticket IDs** - Get ticket IDs from HubSpot (lightweight query)
-2. **Phase 2: Setup** - Pull latest code, create results folder, create initial HTML playground
-3. **Phase 3: Parallel Triage** - Spawn background sub-agents for each ticket ID (each adds their ticket to the shared HTML)
+2. **Phase 2: Setup** - Pull latest code, create results folder with `tickets/` subdirectory
+3. **Phase 3: Parallel Triage** - Spawn background sub-agents for each ticket ID (each writes to its own `tickets/ticket-{id}.json` file)
 4. **Phase 4: Wait for Completion** - Wait for all sub-agents to finish
-5. **Phase 5: Open Report** - Open the completed playground in Chrome
+5. **Phase 5: Merge & Build Report** - Merge all ticket JSON files into HTML playground
+6. **Phase 6: Open Report** - Open the completed playground in Chrome
 
 ---
 
@@ -94,7 +95,7 @@ hubspot-search-objects:
 
 **Note:** Only ticket IDs are needed here. Each sub-agent will fetch full ticket details.
 
-### Step 3: Pull Latest Code & Create Initial Playground
+### Step 3: Pull Latest Code & Create Results Folder
 
 Before spawning sub-agents:
 
@@ -103,29 +104,17 @@ Before spawning sub-agents:
 ~/projects/pull-all.sh
 ```
 
-2. **Create a timestamped results folder:**
+2. **Create a timestamped results folder with tickets subdirectory:**
 ```bash
 RESULTS_FOLDER=~/projects/backlog-reports/run-$(date +%Y%m%d-%H%M%S)
-mkdir -p $RESULTS_FOLDER
+mkdir -p $RESULTS_FOLDER/tickets
 ```
 
-3. **Create the initial HTML playground file:**
-
-Read the playground template from:
-```
-~/.claude/skills/hubspot-backlogged/templates/playground-template.html
-```
-
-Copy it to the results folder:
-```bash
-cp ~/.claude/skills/hubspot-backlogged/templates/playground-template.html $RESULTS_FOLDER/backlog-status-report.html
-```
-
-The HTML file path is: `$RESULTS_FOLDER/backlog-status-report.html`
+The `tickets/` subdirectory is where each sub-agent writes its ticket JSON file.
 
 Save these values - you'll pass them to all sub-agents:
-- `resultsFolder`: The results folder path
-- `playgroundPath`: The HTML file path
+- `resultsFolder`: The results folder path (e.g., `~/projects/backlog-reports/run-20260203-190000`)
+- `ticketsDir`: The tickets subdirectory path (e.g., `~/projects/backlog-reports/run-20260203-190000/tickets`)
 - `expectedTicketCount`: Total number of tickets to triage
 
 ### Step 4: Spawn Parallel Sub-Agents in Background
@@ -136,7 +125,7 @@ For each ticket, spawn a Task tool with:
 - `subagent_type`: "general-purpose"
 - `description`: "Triage ticket HS-<id>"
 - `run_in_background`: true
-- `prompt`: Include the ticket ID, playground path, and triage instructions
+- `prompt`: Include the ticket ID, tickets directory path, and triage instructions
 
 **Read the sub-agent instructions first:**
 ```
@@ -158,7 +147,7 @@ Task 1:
     ## Ticket to Triage
     ticketId: 12345
     hubspotPortalId: <portal-id-from-user-details>
-    playgroundPath: <HTML file path from Step 3>
+    ticketsDir: <tickets directory path from Step 3>
 
 Task 2:
   subagent_type: general-purpose
@@ -170,17 +159,17 @@ Task 2:
     ## Ticket to Triage
     ticketId: 12346
     hubspotPortalId: <portal-id>
-    playgroundPath: <HTML file path>
+    ticketsDir: <tickets directory path>
 
 (etc. for all tickets)
 ```
 
-**Note:** Each sub-agent fetches ticket data and adds their ticket to the shared HTML playground file.
+**Note:** Each sub-agent fetches ticket data and writes to its own file: `{ticketsDir}/ticket-{ticketId}.json`
 
 **Important:**
 - All Task tool calls MUST be in a single message for parallel execution
 - Use `run_in_background: true` for all sub-agents
-- Each sub-agent adds their ticket to the HTML file's data section
+- Each sub-agent writes to its OWN separate JSON file (no race conditions!)
 - Each Task tool call returns a `task_id` - save these for Step 5
 
 ### Step 5: Wait for All Agents to Complete
@@ -202,13 +191,41 @@ You can call multiple `TaskOutput` calls in parallel (one message with all calls
 
 Each agent will confirm when it has added its ticket to the HTML file.
 
-### Step 6: Save results.json
+### Step 6: Merge Ticket Files & Build HTML Report
 
-After all agents complete, extract the ticket data from the HTML and save as JSON for programmatic access.
+After all agents complete, merge all individual ticket JSON files into the HTML playground.
 
-1. **Read the completed HTML file**
-2. **Extract the ticketData array** from the JavaScript section
-3. **Create results.json** in the same folder with this structure:
+1. **Read all ticket JSON files** from `{ticketsDir}/ticket-*.json`
+2. **Parse each file** and collect all ticket objects into an array
+3. **Read the HTML template** from `~/.claude/skills/hubspot-backlogged/templates/playground-template.html`
+4. **Insert the ticket data** into the template's `ticketData` array (before the `// TICKET_DATA_MARKER` comment)
+5. **Write the completed HTML** to `{resultsFolder}/backlog-status-report.html`
+
+**Merge logic (Node.js script or inline):**
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+// Read all ticket JSON files
+const ticketsDir = '<ticketsDir>';
+const files = fs.readdirSync(ticketsDir).filter(f => f.startsWith('ticket-') && f.endsWith('.json'));
+const tickets = files.map(f => JSON.parse(fs.readFileSync(path.join(ticketsDir, f), 'utf8')));
+
+// Read template
+const template = fs.readFileSync('~/.claude/skills/hubspot-backlogged/templates/playground-template.html', 'utf8');
+
+// Insert tickets before marker
+const marker = '// TICKET_DATA_MARKER';
+const ticketDataStr = tickets.map(t => '      ' + JSON.stringify(t)).join(',\n');
+const html = template.replace(marker, ticketDataStr + ',\n      ' + marker);
+
+// Write HTML
+fs.writeFileSync('<resultsFolder>/backlog-status-report.html', html);
+```
+
+### Step 7: Save results.json
+
+Create a JSON summary file for programmatic access:
 
 ```json
 {
@@ -221,24 +238,24 @@ After all agents complete, extract the ticket data from the HTML and save as JSO
     "stillBacklogged": <N>
   },
   "tickets": [
-    // All ticket objects from ticketData
+    // All ticket objects from the merged data
   ]
 }
 ```
 
 Save to: `<resultsFolder>/results.json`
 
-### Step 7: Open in Chrome
+### Step 8: Open in Chrome
 
-Once results.json is saved:
+Once the HTML report is built:
 
 ```bash
-open -a "Google Chrome" <playgroundPath>
+open -a "Google Chrome" <resultsFolder>/backlog-status-report.html
 ```
 
 Inform the user:
 - Report is ready
-- Path to the HTML file: `<playgroundPath>`
+- Path to the HTML file: `<resultsFolder>/backlog-status-report.html`
 - Path to JSON data: `<resultsFolder>/results.json`
 - Timestamp of report generation
 - Summary counts (Ready to Close, Waiting on Release, Still Backlogged)
@@ -254,6 +271,14 @@ Inform the user:
 | **Support Pipeline** | `0` |
 | **Backlogged Stage** | `160253050` |
 | **Waiting on Release Stage** | `66012185` |
+
+### Owner IDs
+
+| Name | Owner ID |
+|------|----------|
+| **Chianne** | `85407591` |
+| **Renas** | `85769949` |
+| **Anthony** | `258650017` |
 
 ### Custom Fields
 
@@ -289,7 +314,8 @@ This skill is **READ-ONLY**:
 - Does not push changes to git
 
 The only files written are:
-- The HTML playground report (updated by each ticket-triager)
+- Individual ticket JSON files in `{resultsFolder}/tickets/` (one per ticket, written by sub-agents)
+- The HTML playground report (built by orchestrator from merged ticket data)
 - The results.json file (created by the orchestrator at the end)
 
 All recommendations are for **human review and action**.
@@ -313,10 +339,10 @@ All recommendations are for **human review and action**.
 
 | Agent | Path | Purpose |
 |-------|------|---------|
-| Ticket Triager | `~/.claude/skills/hubspot-backlogged/agents/ticket-triager.md` | Analyzes one ticket, adds it to shared HTML playground |
+| Ticket Triager | `~/.claude/skills/hubspot-backlogged/agents/ticket-triager.md` | Analyzes one ticket, writes to `{ticketsDir}/ticket-{id}.json` |
 
 ## Template Files
 
 | Template | Path | Purpose |
 |----------|------|---------|
-| Playground Template | `~/.claude/skills/hubspot-backlogged/templates/playground-template.html` | Initial HTML structure that agents populate |
+| Playground Template | `~/.claude/skills/hubspot-backlogged/templates/playground-template.html` | HTML template that orchestrator populates with merged ticket data |
