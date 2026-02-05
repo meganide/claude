@@ -114,6 +114,7 @@ This ensures you have the latest commits and data from all repositories. **Never
 | `backstage-plugins` | Spotify's commercial plugins |
 | `spotify-for-backstage-docs` | Plugin and Portal documentation |
 | `portal-internal-plugins` | Internal debugging tools |
+| `portal-cloud-automation` | Scripts and configs for deploying, managing, and verifying Portal Cloud on GCP |
 
 ### Documentation URLs
 
@@ -156,6 +157,7 @@ gh pr view <number>
 | Plugin bugs | `~/projects/backstage-plugins` | Plugin code, features, regressions |
 | Internal tools | `~/projects/portal-internal-plugins` | Debugging tools, internal features |
 | Documentation | `~/projects/spotify-for-backstage-docs` | Doc updates, examples |
+| GCP deployment/automation | `~/projects/portal-cloud-automation` | Deploy scripts, instance management, GCP verification |
 
 **Common searches in private repos:**
 

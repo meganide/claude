@@ -2,7 +2,7 @@
 - Maintainable production code
 - Clean, readable code with meaningful names
 - Focused, concise functions
-- Self-documenting, minimal comments
+- Self-documenting code; avoid comments explaining "what" or "how" - only add comments when absolutely necessary to explain the "why" behind important decisions
 - Single Responsibility Principle
 - DRY - no duplication, extract common logic
 - Easy to modify and extend
