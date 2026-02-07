@@ -1,8 +1,5 @@
 {
   "permissions": {
-    "ask": [
-      "Bash(portal-ops *)"
-    ],
     "deny": [
       "Bash(portal-ops lifecycle restart *)",
       "Bash(portal-ops cloudrun restart *)",
@@ -62,9 +59,11 @@
       "mcp__hubspot__hubspot-update-property",
       "mcp__hubspot__hubspot-create-engagement",
       "mcp__hubspot__hubspot-update-engagement"
+    ],
+    "ask": [
+      "Bash(portal-ops *)"
     ]
   },
-  "model": "claude-opus-4-5@20251101",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"

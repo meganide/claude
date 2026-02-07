@@ -225,5 +225,5 @@ If the user needs multiple related assets (e.g., "generate 5 game item icons"), 
 
 - Always clean up temporary files (`/tmp/gemini_response.json`, `/tmp/gemini_request.json`) after extraction.
 - The model supports accurate text rendering — use it for infographics, menus, diagrams.
-- For game assets that need transparency, instruct the prompt to use "transparent background" or "on a solid color background" for easy removal.
+- **Removable backgrounds for assets:** When generating game sprites, characters, icons, or any asset that will need its background removed, always instruct the prompt to place the subject on a **flat, solid-color background**. Choose a background color that strongly contrasts with the subject — e.g., bright green (`#00FF00`) is a good default chroma key color, but if the subject contains green elements (trees, clothing, etc.), switch to bright magenta (`#FF00FF`), solid blue (`#0000FF`), or another color absent from the subject. The goal is zero overlap between the background color and any color in the subject, making background removal trivial. Never use gradients, patterns, or subtle textures for these backgrounds.
 - Default resolution is `2K` which balances quality and speed. Use `4K` only when asked.
