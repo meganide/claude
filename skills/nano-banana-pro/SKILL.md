@@ -5,7 +5,7 @@ description: Generate and edit images using Google Gemini's Nano Banana Pro mode
 
 # Nano Banana Pro — Image Generation Skill
 
-Generate production-quality images using Google's Gemini `gemini-3-pro-image-preview` model. This skill handles text-to-image generation, image editing, and multi-turn iterative refinement.
+Generate production-quality images using Google's Gemini `gemini-2.5-flash-image` model. This skill handles text-to-image generation, image editing, and multi-turn iterative refinement.
 
 ## When to Use
 
@@ -17,7 +17,7 @@ Use this skill whenever the user needs visual assets:
 - UI mockup assets, placeholder images
 - Any image described in a prompt
 
-## API Key
+## Configuration
 
 The API key must be set as the environment variable `GEMINI_API_KEY`.
 
@@ -25,6 +25,13 @@ If it's not set, ask the user to provide it:
 ```
 export GEMINI_API_KEY="your-key-here"
 ```
+
+The model can be customized using the `GEMINI_MODEL` environment variable:
+```
+export GEMINI_MODEL="gemini-2.5-flash-image"
+```
+
+If not set, it defaults to `gemini-2.5-flash-image`.
 
 ## Image Storage
 
@@ -79,7 +86,9 @@ If the user's request is vague, enhance it with sensible creative defaults but s
 Use `curl` via Bash to call the Gemini API:
 
 ```bash
-curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${GEMINI_API_KEY}" \
+MODEL="${GEMINI_MODEL:-gemini-2.5-flash-image}"
+
+curl -s "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "contents": [{"parts": [{"text": "YOUR_PROMPT_HERE"}]}],
@@ -172,7 +181,9 @@ print('Request payload written.')
 Then send it:
 
 ```bash
-curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${GEMINI_API_KEY}" \
+MODEL="${GEMINI_MODEL:-gemini-2.5-flash-image}"
+
+curl -s "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
   -H "Content-Type: application/json" \
   -d @/tmp/gemini_request.json \
   -o /tmp/gemini_response.json
